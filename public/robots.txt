@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://focus-study-sprint.sociobot.in/sitemap.xml
