@@ -1,0 +1,9 @@
+{
+  "slug": "focus-study-sprint",
+  "title": "Focus Study Sprint",
+  "user": "A student or self-learner who wants short, calm, active-recall sessions without streaks, rewards, feeds, or an AI content firehose.",
+  "smallest_useful_product": "A PWA where users paste 5–30 prompts, choose 5/10/20 minutes, answer in a distraction-free loop, and receive a private session recap with no streak or leaderboard.",
+  "artifact_class": "pwa-offline",
+  "monetization": "one-time",
+  "constraints": "No behavioral analytics by default; keyboard-first, reduced-motion, screen-reader labels; no learning claims beyond practice support."
+}
