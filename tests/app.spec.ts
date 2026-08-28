@@ -76,3 +76,28 @@ test('legal pages have landmarks, titles, and one primary heading', async ({ pag
     await expect(page.locator('h1')).toHaveCount(1);
   }
 });
+
+test('all visible controls retain 44px touch targets on mobile and desktop', async ({ browser }) => {
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 1000 }]) {
+    const page = await browser.newPage({ viewport });
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await expect(page.locator('main')).toBeVisible();
+    const tooSmall = await page.locator('a, button, input:not([type="radio"]):not([type="file"]):not([type="hidden"]), select').evaluateAll((elements) => elements
+      .map((element) => {
+        const bounds = element.getBoundingClientRect();
+        return {
+          name: (element.textContent || element.getAttribute('aria-label') || element.tagName).trim(),
+          width: bounds.width,
+          height: bounds.height
+        };
+      })
+      .filter((target) => target.width < 44 || target.height < 44));
+    expect(tooSmall).toEqual([]);
+
+    await page.getByRole('button', { name: 'Use an example' }).click();
+    await page.getByRole('button', { name: /Begin this sprint/ }).click();
+    const pauseBounds = await page.getByRole('button', { name: 'Pause' }).boundingBox();
+    expect(pauseBounds?.height).toBeGreaterThanOrEqual(44);
+    await page.close();
+  }
+});
