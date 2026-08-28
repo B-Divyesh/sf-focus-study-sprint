@@ -1,4 +1,4 @@
-const VERSION = 'fss-v1';
+const VERSION = 'fss-v2';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 const PRECACHE = ['/', '/offline.html', '/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/assets/topographic-route-768.webp', '/assets/topographic-route-1280.webp', '/privacy/', '/terms/'];
