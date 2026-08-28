@@ -35,4 +35,14 @@ describe('static deployment policy', () => {
     expect(readFileSync('public/sw.js', 'utf8')).toContain("const VERSION = 'fss-v2'");
     expect(readFileSync('public/manifest.webmanifest', 'utf8')).toContain('"start_url": "/?v=2"');
   });
+
+  it('makes the production billing contract a required release gate', () => {
+    const packageJson = JSON.parse(readFileSync('package.json', 'utf8')) as { scripts: Record<string, string> };
+    const billingContract = readFileSync('scripts/verify-live-contract.mjs', 'utf8');
+    expect(packageJson.scripts['test:release']).toContain('npm run test:live-contract');
+    expect(billingContract).toContain("slug: 'focus-study-sprint'");
+    expect(billingContract).toContain('priceMinor: 1200');
+    expect(billingContract).toContain('assert.ok(registered');
+    expect(billingContract).toContain('Checkout must redirect to hosted Sociobot checkout');
+  });
 });

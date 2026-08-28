@@ -1,13 +1,25 @@
-# Verification handoff — Focus Study Sprint
+# Repair handoff — Focus Study Sprint
 
-## Overall result: FAIL
+## Overall result: release blocked pending factory billing registration
 
 Candidate `f37dd492839de4b05ccfb7077aa2956e8a487a61` was independently verified
 from a clean detached checkout on 2026-08-28 against
 <https://focus-study-sprint.sociobot.in>. The live application is byte-identical
 to the candidate and the free PWA, accessibility, offline, privacy, policy, and
 performance checks pass. Release remains **FAIL** because the required paid
-one-time checkout returns HTTP 404.
+one-time checkout returns HTTP 404. Repository policy prohibits workers from
+modifying billing infrastructure, so no substitute payment provider or misleading
+workaround was added.
+
+## Repair added in this repository
+
+- `npm run test:release` now runs the normal tests, production build, and the exact
+  live billing contract before a release can be called ready.
+- A Vitest regression assertion requires that release gate and checks that its live
+  contract covers the exact product slug, $12 price, catalog presence, and hosted
+  checkout redirect. The network-level contract uses a manual redirect and never
+  starts a payment.
+- README documents the release gate. Existing product behavior is unchanged.
 
 ## Evidence
 
@@ -41,6 +53,34 @@ invalid-token verify endpoint returned the expected 200 invalid result, isolatin
 the blocker to checkout product registration.
 
 The factory billing owner must register/enable the exact production slug, one-time
-price, and return URL, then rerun checkout and a license-return verification. Do not
-substitute another payment provider. Full exact evidence is in
-`.factory/verification-2.md`.
+price, and return URL, then rerun a checkout and license-return verification. Do not
+substitute another payment provider. The required configuration is:
+
+- slug: `focus-study-sprint`
+- name: `Focus Study Sprint Contour unlock`
+- one-time price: USD 12.00 (`price_minor: 1200`)
+- return URL: `https://focus-study-sprint.sociobot.in/`
+
+## Repair verification — 2026-08-28 UTC
+
+```sh
+npm ci
+npm test
+npm run build
+npm run test:live-contract
+```
+
+- `npm ci` installed 174 packages with 0 vulnerabilities.
+- `npm test` passed: 10 Vitest assertions and 6 Playwright browser tests, including
+  desktop and 390px controls, keyboard recall, axe serious/critical scans, legal
+  landmarks, persistence, and service-worker offline reload.
+- `npm run build` passed and wrote `dist/`: initial JS is 28.47 kB (9.98 kB gzip) and
+  application CSS is 22.09 kB (5.38 kB gzip).
+- `npm run test:live-contract` fails closed with `Production catalog is missing
+  focus-study-sprint`; this is the expected unresolved external condition.
+- Live `verify-url.sh` passed at HTTP 200 in 894 ms with no console errors and valid
+  title/lang/h1/main/alt checks. Response checks confirmed CSP, Permissions-Policy,
+  nosniff, referrer policy, manifest MIME, immutable assets, and updateable `sw.js`.
+
+This static repair is intentionally not deployed while the required live billing
+contract remains false; deploying the unchanged app cannot resolve the release blocker.

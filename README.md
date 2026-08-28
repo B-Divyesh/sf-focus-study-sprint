@@ -55,6 +55,17 @@ npm test
 Preview the built result with `npm run preview`. The Playwright suite starts its own
 preview server when one is not already running.
 
+Before a production release, run the complete release gate:
+
+```sh
+npm run test:release
+```
+
+It includes the live Sociobot billing contract: the production catalog must contain
+this exact $12 product, its return URL, and a checkout that redirects to the hosted
+Sociobot/Dodo flow. This check intentionally fails when factory billing registration
+is missing; it never starts a payment.
+
 ## Data and privacy
 
 Prompts, responses, recaps, saved sets, display preference, and any license token are
@@ -65,7 +76,8 @@ remove records; use Library → Export JSON for a portable backup.
 
 Deploy the contents of `dist/` as a static site with clean-directory URLs enabled.
 Do not configure infrastructure, DNS, or billing from this repository. The Param
-Factory registers the Sociobot product and checkout return URL separately.
+Factory registers the Sociobot product and checkout return URL separately, and the
+release gate above must pass before deployment is considered releasable.
 
 ## Project notes
 

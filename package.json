@@ -10,7 +10,8 @@
     "test": "vitest run src && playwright test",
     "test:unit": "vitest run src",
     "test:e2e": "playwright test",
-    "test:live-contract": "node scripts/verify-live-contract.mjs"
+    "test:live-contract": "node scripts/verify-live-contract.mjs",
+    "test:release": "npm test && npm run build && npm run test:live-contract"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
