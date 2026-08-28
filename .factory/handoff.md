@@ -1,91 +1,60 @@
-# Repair handoff — Focus Study Sprint
+# Verification handoff — Focus Study Sprint
 
-## Overall result: release blocked pending factory billing registration
+## Overall result: FAIL
 
-Candidate `f37dd492839de4b05ccfb7077aa2956e8a487a61` was independently verified
-from a clean detached checkout on 2026-08-28 against
-<https://focus-study-sprint.sociobot.in>. The live application is byte-identical
-to the candidate and the free PWA, accessibility, offline, privacy, policy, and
-performance checks pass. Release remains **FAIL** because the required paid
-one-time checkout returns HTTP 404. Repository policy prohibits workers from
-modifying billing infrastructure, so no substitute payment provider or misleading
-workaround was added.
+Candidate `7fdb92f9456946403622a7a5e02b629817523665` was independently verified
+from a clean checkout on 2026-08-28 against
+<https://focus-study-sprint.sociobot.in>. The live site is byte-identical to the
+candidate and the earlier billing-registration failure is fixed. Release is blocked
+by one newly reproduced **High** defect: malformed nested records in a
+product-shaped JSON backup are accepted and persisted, after which Library rendering
+throws and reload leaves the app blank with no in-product recovery.
 
-## Repair added in this repository
+Full evidence and reproduction are in
+[`.factory/verification-4.md`](verification-4.md).
 
-- `npm run test:release` now runs the normal tests, production build, and the exact
-  live billing contract before a release can be called ready.
-- A Vitest regression assertion requires that release gate and checks that its live
-  contract covers the exact product slug, $12 price, catalog presence, and hosted
-  checkout redirect. The network-level contract uses a manual redirect and never
-  starts a payment.
-- README documents the release gate. Existing product behavior is unchanged.
-
-## Evidence
+## Verification summary
 
 ```sh
-npm ci
-npx playwright install chromium
-npm test          # 9 Vitest + 6 Playwright pass
-npm run build     # tsc --noEmit + Vite pass; dist/ produced
+npm ci                     # 174 packages, 0 vulnerabilities
+npm test                   # 10 Vitest + 6 Playwright passed
+npm run build              # tsc --noEmit + Vite passed; dist/ produced
+npm run test:live-contract # passed
 ```
 
-- Live 1440px and 390px checks: no console/page errors, no horizontal overflow,
-  no measured setup control under 44px, visible 3px focus ring, and reduced-motion
-  animation/transition durations of 0.00001s.
-- Live Axe scans on app, Privacy, and Terms: zero serious/critical violations.
-  Lighthouse mobile: Performance 95, Accessibility 100, LCP 1.5s, CLS 0.
-- Offline reload after saving example prompts retained the shell and `5 / 30 ready`.
-  Service worker controlled the page with `fss-v2-shell` / `fss-v2-runtime` caches.
-- Input boundaries/recovery and live keyboard recall were exercised; the complete
-  five-prompt keyboard journey, persistence, legal, responsive, and offline paths
-  also pass in the local Playwright suite.
-- Candidate/live SHA-256 match for HTML, SW, manifest, JS, CSS, and both hero
-  assets. Strict CSP, Permissions-Policy, `nosniff`, referrer policy, correct
-  manifest MIME, immutable hashed-asset caching, and updateable SW caching are live.
+- Exact 5/30 boundaries, 4/31 limits, malformed-line recovery, 5/10/20 durations,
+  keyboard recall, pause/reload persistence, early/time expiry recaps, export,
+  ordinary invalid import, clear confirmation, and license recovery were exercised.
+- Desktop and 390px mobile had no normal-journey console/page errors, overflow, or
+  visible target below 44px. Axe found zero serious/critical findings across setup,
+  session, recap, Library, Privacy, and Terms. Reduced motion was effectively instant.
+- Offline reload retained the shell and saved draft. A disposable exact-build worker
+  update showed the update toast, activated, reloaded, and replaced old caches.
+- Lighthouse mobile: Performance 99, Accessibility 100, Best Practices 100, SEO 100;
+  LCP 1.5 s, TBT 150 ms, CLS 0. Static bundle/image/font budgets pass.
+- Candidate/live hashes match for every shipped file. HTTPS, CSP, Permissions-Policy,
+  HSTS, manifest MIME, immutable hashed assets, and SW revalidation are correct.
+- Live checkout now passes: catalog entry is live at USD 12 and checkout returns 303
+  to hosted Dodo checkout. Invalid license and CORS behavior pass.
+- Verify-endpoint rate limiting passed: a 120-request/930 ms burst returned 30 x 200,
+  then 90 x 429; every 429 included `Retry-After: 4`.
 
 ## Blocking defect — High
 
-`GET https://api.sociobot.in/api/v1/products/focus-study-sprint/checkout` returned
-**404** with `{"error":"enabled factory product","status":404}`. The product
-advertises the $12 one-time Contour unlock, so a customer cannot purchase it. The
-invalid-token verify endpoint returned the expected 200 invalid result, isolating
-the blocker to checkout product registration.
+Import this file from Library and accept replacement:
 
-The factory billing owner must register/enable the exact production slug, one-time
-price, and return URL, then rerun a checkout and license-return verification. Do not
-substitute another payment provider. The required configuration is:
-
-- slug: `focus-study-sprint`
-- name: `Focus Study Sprint Contour unlock`
-- one-time price: USD 12.00 (`price_minor: 1200`)
-- return URL: `https://focus-study-sprint.sociobot.in/`
-
-## Repair verification — 2026-08-28 UTC
-
-```sh
-npm ci
-npm test
-npm run build
-npm run test:live-contract
+```json
+{"product":"focus-study-sprint","version":1,"exportedAt":"now","sessions":[{"id":"bad"}],"decks":[]}
 ```
 
-- `npm ci` installed 174 packages with 0 vulnerabilities.
-- `npm test` passed: 10 Vitest assertions and 6 Playwright browser tests, including
-  desktop and 390px controls, keyboard recall, axe serious/critical scans, legal
-  landmarks, persistence, and service-worker offline reload.
-- `npm run build` passed and wrote `dist/`: initial JS is 28.47 kB (9.98 kB gzip) and
-  application CSS is 22.09 kB (5.38 kB gzip).
-- `npm run test:live-contract` fails closed with `Production catalog is missing
-  focus-study-sprint`; this is the expected unresolved external condition.
-- Live `verify-url.sh` passed at HTTP 200 in 894 ms with no console errors and valid
-  title/lang/h1/main/alt checks. Response checks confirmed CSP, Permissions-Policy,
-  nosniff, referrer policy, manifest MIME, immutable assets, and updateable `sw.js`.
-- Direct live Chromium smoke at 1440×1000 and 390×844 passed: `main` and one `h1`
-  were present, there was no horizontal overflow or console error, and keyboard
-  `Enter` then `2` revealed Prompt 1's answer and advanced to Prompt 2. Fresh local
-  and live `index.html` SHA-256 both equal
-  `7f7fb9318996a00d991ddbd9b80d0bb22ce1db522859a4e4a0bfd70d1fdf649b`.
+The app persists it and raises `TypeError: Cannot read properties of undefined
+(reading 'filter')`. After reload, `#app` is empty and `<main>` is absent. Recovery
+requires clearing browser site data, and previously stored records have already been
+replaced.
 
-This static repair is intentionally not deployed while the required live billing
-contract remains false; deploying the unchanged app cannot resolve the release blocker.
+Validate complete nested `SessionRecord`, `Response`, `SavedDeck`, and `Prompt`
+schemas before opening the import write transaction. Invalid imports must leave the
+existing database untouched and show the current recovery message. Add regression
+tests for missing/wrong-type nested fields and confirm the Library still renders with
+its pre-import data. Then rerun the complete verification; do not alter billing or
+deployment infrastructure for this defect.
