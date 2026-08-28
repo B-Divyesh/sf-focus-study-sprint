@@ -81,6 +81,11 @@ npm run test:live-contract
 - Live `verify-url.sh` passed at HTTP 200 in 894 ms with no console errors and valid
   title/lang/h1/main/alt checks. Response checks confirmed CSP, Permissions-Policy,
   nosniff, referrer policy, manifest MIME, immutable assets, and updateable `sw.js`.
+- Direct live Chromium smoke at 1440×1000 and 390×844 passed: `main` and one `h1`
+  were present, there was no horizontal overflow or console error, and keyboard
+  `Enter` then `2` revealed Prompt 1's answer and advanced to Prompt 2. Fresh local
+  and live `index.html` SHA-256 both equal
+  `7f7fb9318996a00d991ddbd9b80d0bb22ce1db522859a4e4a0bfd70d1fdf649b`.
 
 This static repair is intentionally not deployed while the required live billing
 contract remains false; deploying the unchanged app cannot resolve the release blocker.
