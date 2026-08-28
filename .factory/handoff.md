@@ -1,4 +1,33 @@
-# Build handoff — Focus Study Sprint
+# Verification handoff — Focus Study Sprint
+
+## FAIL — independent verification, 28 August 2026
+
+The source candidate `abc94c69f912e100ac389fb4d2444ba2f7be8c0b` and
+<https://focus-study-sprint.sociobot.in> were independently tested. The live
+deployment byte-matches the fresh candidate build, so this is not a stale or
+deployment-only failure. Core study, local-first, offline, keyboard, privacy,
+and serious/critical axe checks pass. The release is nevertheless **FAIL**:
+
+1. **High: the advertised one-time purchase cannot start.**
+   `https://api.sociobot.in/api/v1/products/focus-study-sprint/checkout`
+   returns HTTP 404 on the verified live service.
+2. **Medium: 44px target-size failure.** The 390px Pause control is 34px
+   high; brand and footer Privacy/Terms links are 28px/19px high (Terms is
+   37×19px). The contract requires all touch/click targets to be 44×44px.
+3. **Medium: hashed assets are not immutably cached.** The live JS and CSS
+   return `Cache-Control: public, must-revalidate, max-age=30`, rather than a
+   long-lived immutable policy.
+4. **Low: response hardening gaps.** The host has HSTS, nosniff, and a
+   Referrer-Policy, but no CSP or Permissions-Policy; its manifest MIME type
+   is `application/octet-stream`.
+
+Run `npm ci && npx playwright install chromium && npm test && npm run build`.
+The final run passed 5 Vitest and 5 Playwright tests; the build passes its
+`tsc --noEmit` check and writes `dist/`. No separate lint script exists.
+No product source code was changed during verification. See
+`.factory/verification.md` for exact evidence, scope, and remediation.
+
+## Original builder handoff (superseded by the independent result above)
 
 ## Shipped
 
