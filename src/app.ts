@@ -178,7 +178,7 @@ function sessionView(): string {
         <div><p class="coordinate">PROMPT ${state.current + 1} OF ${state.prompts.length}</p><h2 id="session-title" class="sr-only">Active recall session</h2></div>
         <div class="timer ${state.paused ? 'is-paused' : ''}" aria-label="${formatClock(state.remaining)} remaining"><span>${formatClock(state.remaining)}</span><button class="text-button" data-pause>${state.paused ? 'Resume' : 'Pause'}</button></div>
       </div>
-      <div class="route-progress" role="progressbar" aria-label="Prompt progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}"><span style="width:${percent}%"></span></div>
+      <div class="route-progress" role="progressbar" aria-label="Prompt progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}"><span class="progress-${Math.round(percent)}"></span></div>
       <article class="study-card ${state.revealed ? 'revealed' : ''}">
         <p class="card-label">Prompt</p>
         <p class="question">${escapeHtml(prompt.question)}</p>
