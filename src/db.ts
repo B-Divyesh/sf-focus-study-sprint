@@ -1,4 +1,5 @@
 import type { AppExport, SavedDeck, SessionRecord } from './types';
+import { isValidImport, isValidSavedDeck, isValidSessionRecord } from './logic';
 
 const DB_NAME = 'focus-study-sprint';
 const DB_VERSION = 1;
@@ -33,13 +34,22 @@ export const storage = {
   putSession: (session: SessionRecord) => request(SESSIONS, 'readwrite', (store) => store.put(session)),
   putDeck: (deck: SavedDeck) => request(DECKS, 'readwrite', (store) => store.put(deck)),
   deleteDeck: (id: string) => request(DECKS, 'readwrite', (store) => store.delete(id)),
-  getSessions: () => request<SessionRecord[]>(SESSIONS, 'readonly', (store) => store.getAll()),
-  getDecks: () => request<SavedDeck[]>(DECKS, 'readonly', (store) => store.getAll()),
+  async getSessions(): Promise<SessionRecord[]> {
+    const sessions: unknown[] = await request(SESSIONS, 'readonly', (store) => store.getAll());
+    if (!sessions.every(isValidSessionRecord)) throw new Error('Stored session data is invalid.');
+    return sessions;
+  },
+  async getDecks(): Promise<SavedDeck[]> {
+    const decks: unknown[] = await request(DECKS, 'readonly', (store) => store.getAll());
+    if (!decks.every(isValidSavedDeck)) throw new Error('Stored prompt-set data is invalid.');
+    return decks;
+  },
   async exportAll(): Promise<AppExport> {
     const [sessions, decks] = await Promise.all([this.getSessions(), this.getDecks()]);
     return { product: 'focus-study-sprint', version: 1, exportedAt: new Date().toISOString(), sessions, decks };
   },
-  async importAll(data: AppExport): Promise<void> {
+  async importAll(data: unknown): Promise<void> {
+    if (!isValidImport(data)) throw new Error('Backup data is invalid.');
     const db = await openDatabase();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction([SESSIONS, DECKS], 'readwrite');

@@ -472,7 +472,11 @@ async function init(): Promise<void> {
   captureLicenseFromUrl();
   state.unlocked = cachedUnlock();
   try { [state.sessions, state.decks] = await Promise.all([storage.getSessions(), storage.getDecks()]); }
-  catch { state.message = 'Private storage is unavailable in this browser. Sessions still work, but export before leaving.'; }
+  catch (error) {
+    state.message = error instanceof Error && error.message.startsWith('Stored ')
+      ? 'Stored data could not be read. Open Library to restore a valid backup or clear local data.'
+      : 'Private storage is unavailable in this browser. Sessions still work, but export before leaving.';
+  }
   const restored = restoreActive();
   if (!restored) {
     const hash = location.hash.slice(1) as Screen;

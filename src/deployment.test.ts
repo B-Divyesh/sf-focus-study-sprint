@@ -32,8 +32,8 @@ describe('static deployment policy', () => {
   });
 
   it('ships a versioned app shell for service-worker update activation', () => {
-    expect(readFileSync('public/sw.js', 'utf8')).toContain("const VERSION = 'fss-v2'");
-    expect(readFileSync('public/manifest.webmanifest', 'utf8')).toContain('"start_url": "/?v=2"');
+    expect(readFileSync('public/sw.js', 'utf8')).toContain("const VERSION = 'fss-v3'");
+    expect(readFileSync('public/manifest.webmanifest', 'utf8')).toContain('"start_url": "/?v=3"');
   });
 
   it('makes the production billing contract a required release gate', () => {

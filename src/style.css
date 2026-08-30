@@ -348,7 +348,8 @@ footer a { display: inline-flex; min-width: 44px; min-height: 44px; align-items:
 
 @media (max-width: 600px) {
   .site-header { padding: 8px 14px 0; gap: 6px; }
-  .site-header nav { margin-inline: -14px; }
+  .site-header nav { width: calc(100% + 28px); margin-inline: -14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .site-header .nav-link { min-width: 0; padding-inline: 4px; }
   .brand h1 { max-width: 120px; }
   .hero { padding: 42px 20px 48px; }
   .hero h2 { font-size: clamp(2.65rem, 13vw, 3.35rem); }
@@ -357,10 +358,11 @@ footer a { display: inline-flex; min-width: 44px; min-height: 44px; align-items:
   .trust-list { display: grid; }
   .chart { margin: 0 12px 70px; padding: 38px 20px 42px; }
   .chart::before, .chart::after { display: none; }
-  .section-heading { align-items: center; }
+  .section-heading { align-items: center; flex-wrap: wrap; }
   .section-heading h2 { font-size: 2rem; }
-  .duration-options { gap: 8px; }
-  .duration span { padding-inline: 5px; }
+  .duration-field { min-inline-size: 0; }
+  .duration-options { grid-template-columns: repeat(auto-fit, minmax(min(100%, 5.75rem), 1fr)); gap: 8px; }
+  .duration span { padding-inline: 5px; flex-wrap: wrap; }
   .keyboard-note { display: block; margin: 12px 0 0; }
   .primary-action, .secondary-action { width: 100%; }
   .session-wrap { padding: 36px 14px 70px; }

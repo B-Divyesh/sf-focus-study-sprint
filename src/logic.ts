@@ -1,4 +1,4 @@
-import type { AppExport, Prompt, Response } from './types';
+import type { AppExport, Prompt, Response, SavedDeck, SessionRecord } from './types';
 
 const separators = ['::', '\t', ' — ', ' - '];
 
@@ -38,9 +38,52 @@ export function recap(responses: Response[]) {
   return { recalled, practice: responses.length - recalled, answered: responses.length };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return isString(value) && value.trim().length > 0;
+}
+
+export function isValidPrompt(value: unknown): value is Prompt {
+  if (!isRecord(value)) return false;
+  return isNonEmptyString(value.id) && isNonEmptyString(value.question) && isNonEmptyString(value.answer);
+}
+
+export function isValidResponse(value: unknown): value is Response {
+  if (!isRecord(value)) return false;
+  return isNonEmptyString(value.promptId) && isNonEmptyString(value.question) &&
+    isNonEmptyString(value.expected) && isString(value.response) &&
+    (value.rating === 'recalled' || value.rating === 'practice');
+}
+
+export function isValidSessionRecord(value: unknown): value is SessionRecord {
+  if (!isRecord(value)) return false;
+  return isNonEmptyString(value.id) && isNonEmptyString(value.startedAt) &&
+    isNonEmptyString(value.endedAt) && typeof value.durationMinutes === 'number' &&
+    Number.isFinite(value.durationMinutes) && value.durationMinutes > 0 &&
+    (value.endReason === 'complete' || value.endReason === 'time') &&
+    Array.isArray(value.responses) && value.responses.every(isValidResponse) &&
+    typeof value.promptCount === 'number' && Number.isInteger(value.promptCount) &&
+    value.promptCount >= 0 && value.responses.length <= value.promptCount;
+}
+
+export function isValidSavedDeck(value: unknown): value is SavedDeck {
+  if (!isRecord(value)) return false;
+  return isNonEmptyString(value.id) && isNonEmptyString(value.name) &&
+    isNonEmptyString(value.createdAt) && Array.isArray(value.prompts) &&
+    value.prompts.every(isValidPrompt);
+}
+
 export function isValidImport(value: unknown): value is AppExport {
-  if (!value || typeof value !== 'object') return false;
-  const item = value as Partial<AppExport>;
-  return item.product === 'focus-study-sprint' && item.version === 1 &&
-    Array.isArray(item.sessions) && Array.isArray(item.decks);
+  if (!isRecord(value)) return false;
+  return value.product === 'focus-study-sprint' && value.version === 1 &&
+    isString(value.exportedAt) && Array.isArray(value.sessions) &&
+    value.sessions.every(isValidSessionRecord) && Array.isArray(value.decks) &&
+    value.decks.every(isValidSavedDeck);
 }

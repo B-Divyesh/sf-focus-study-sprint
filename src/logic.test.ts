@@ -32,3 +32,51 @@ it('recognises only this product export shape', () => {
   expect(isValidImport({ product: 'focus-study-sprint', version: 1, sessions: [], decks: [], exportedAt: '' })).toBe(true);
   expect(isValidImport({ product: 'other', version: 1, sessions: [], decks: [] })).toBe(false);
 });
+
+describe('backup schema validation', () => {
+  const validExport = {
+    product: 'focus-study-sprint',
+    version: 1,
+    exportedAt: '2026-08-30T00:00:00.000Z',
+    sessions: [{
+      id: 'session-1',
+      startedAt: '2026-08-30T00:00:00.000Z',
+      endedAt: '2026-08-30T00:05:00.000Z',
+      durationMinutes: 5,
+      endReason: 'complete',
+      promptCount: 5,
+      responses: [{
+        promptId: 'prompt-1',
+        question: 'Capital of Peru?',
+        expected: 'Lima',
+        response: '',
+        rating: 'recalled'
+      }]
+    }],
+    decks: [{
+      id: 'deck-1',
+      name: 'Geography',
+      createdAt: '2026-08-30T00:00:00.000Z',
+      prompts: [{ id: 'prompt-1', question: 'Capital of Peru?', answer: 'Lima' }]
+    }]
+  } as const;
+
+  it('accepts a complete backup', () => {
+    expect(isValidImport(validExport)).toBe(true);
+  });
+
+  it('rejects the verifier malformed nested session', () => {
+    expect(isValidImport({
+      product: 'focus-study-sprint', version: 1, exportedAt: 'now', sessions: [{ id: 'bad' }], decks: []
+    })).toBe(false);
+  });
+
+  it.each([
+    ['session response', { ...validExport, sessions: [{ ...validExport.sessions[0], responses: [{ promptId: 'prompt-1' }] }] }],
+    ['session field type', { ...validExport, sessions: [{ ...validExport.sessions[0], promptCount: '5' }] }],
+    ['saved deck', { ...validExport, decks: [{ id: 'deck-1', name: 'Geography', prompts: [] }] }],
+    ['saved prompt', { ...validExport, decks: [{ ...validExport.decks[0], prompts: [{ id: 'prompt-1', question: 'Capital?' }] }] }]
+  ])('rejects an invalid %s record', (_name, candidate) => {
+    expect(isValidImport(candidate)).toBe(false);
+  });
+});
