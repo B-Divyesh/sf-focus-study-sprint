@@ -39,7 +39,7 @@
     "claim": "Everyone can export and restore the complete local record as JSON.",
     "where": "landing facts and steps, Library, README",
     "test": "npm run test:e2e -- --grep \"@claim:json-backup\"",
-    "sandbox": "fresh /demo session; create a record, export, clear, import the downloaded file, and assert restoration"
+    "sandbox": "fresh /demo session; create a record and a saved prompt set, export, clear, import the downloaded file, and reuse the restored set"
   },
   {
     "id": "accessible-layout",
@@ -60,6 +60,20 @@
     "claim": "Contour costs $12 once and adds reusable prompt sets plus the latest 20 session records.",
     "where": "landing price section, Library, Terms, README",
     "test": "npm run test:e2e -- --grep \"@claim:contour-price\"",
-    "sandbox": "fresh landing page; assert exact terms and the Sociobot product checkout target; live catalog is checked by test:live-contract"
+    "sandbox": "fresh landing page with a recorded valid-license response; save and reuse a five-prompt set, import 21 records, and assert exactly the latest 20 appear; live catalog is checked by test:live-contract"
+  },
+  {
+    "id": "session-timing",
+    "claim": "A study session can be paused and ends with a recap when its selected time runs out.",
+    "where": "README, session timer",
+    "test": "npm run test:e2e -- --grep \"@claim:session-timing\"",
+    "sandbox": "fresh /demo session with the browser clock; pause without losing the remaining time, resume, advance beyond five minutes, and assert the time-ended recap"
+  },
+  {
+    "id": "installable-shell",
+    "claim": "The app provides an installable standalone shell with a manifest and active service worker.",
+    "where": "README",
+    "test": "npm run test:e2e -- --grep \"@claim:installable-shell\"",
+    "sandbox": "fresh /demo page; inspect the linked manifest and wait for the app-owned service worker to activate and control the page"
   }
 ]

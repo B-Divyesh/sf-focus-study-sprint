@@ -92,22 +92,36 @@ test('@claim:json-backup exports and restores the complete local record', async 
   await page.getByRole('button', { name: 'End session and see recap' }).click();
   await page.getByRole('link', { name: 'Library' }).click();
   await expect(page.getByText('1 checked · 0 to revisit')).toBeVisible();
+  page.once('dialog', (dialog) => {
+    expect(dialog.type()).toBe('prompt');
+    void dialog.accept('Biology review');
+  });
+  await page.getByRole('button', { name: 'Save current draft' }).click();
+  await expect(page.getByText('Biology review', { exact: true })).toBeVisible();
+  await expect(page.getByText('5 prompts', { exact: true })).toBeVisible();
 
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: /Export JSON/ }).click();
   const download = await downloadPromise;
   const downloadPath = await download.path();
   if (!downloadPath) throw new Error('The JSON backup did not produce a local download.');
-  const exported = JSON.parse(await readFile(downloadPath, 'utf8')) as { product: string; sessions: unknown[] };
+  const exported = JSON.parse(await readFile(downloadPath, 'utf8')) as { product: string; sessions: unknown[]; decks: Array<{ name: string; prompts: unknown[] }> };
   expect(exported.product).toBe('focus-study-sprint');
   expect(exported.sessions).toHaveLength(1);
+  expect(exported.decks).toEqual([expect.objectContaining({ name: 'Biology review', prompts: expect.any(Array) })]);
+  expect(exported.decks[0].prompts).toHaveLength(5);
 
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Clear local data' }).click();
   await expect(page.getByText('No sessions recorded')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'No saved sets yet' })).toBeVisible();
   page.once('dialog', (dialog) => dialog.accept());
   await page.locator('input[data-import]').setInputFiles(downloadPath);
   await expect(page.getByText('1 checked · 0 to revisit')).toBeVisible();
+  await expect(page.getByText('Biology review', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Use' }).click();
+  await expect(page).toHaveURL(/\/demo\?screen=setup$/);
+  await expect(page.getByLabel(/One prompt and answer/)).toHaveValue(/What process do plants use to convert light into energy\? :: Photosynthesis/);
 });
 
 test('validates malformed input and exposes the recovery instruction', async ({ page }) => {
@@ -206,6 +220,57 @@ test('@claim:offline-reload app shell and sample session work offline after the 
   } finally {
     await context.close();
   }
+});
+
+test('@claim:session-timing pauses a session and ends it when its selected time expires', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-08-30T12:00:00Z') });
+  await page.goto('/demo');
+  await expect(page.locator('.timer span')).toHaveText('05:00');
+
+  await page.getByRole('button', { name: 'Pause' }).click();
+  await expect(page.getByRole('button', { name: 'Resume' })).toBeVisible();
+  const pausedAt = await page.locator('.timer span').textContent();
+  await page.clock.fastForward('00:10');
+  await expect(page.locator('.timer span')).toHaveText(pausedAt ?? '05:00');
+
+  await page.getByRole('button', { name: 'Resume' }).click();
+  await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
+  await page.clock.fastForward('05:01');
+  await expect(page.getByRole('heading', { name: 'Your study session is complete.' })).toBeVisible();
+  await expect(page.getByText('The timer ended the session. This is a record of today’s practice, not a grade.')).toBeVisible();
+});
+
+test('@claim:installable-shell publishes a standalone manifest and active service worker', async ({ page }) => {
+  await page.goto('/demo');
+  await page.waitForFunction(async () => Boolean((await navigator.serviceWorker.ready).active && navigator.serviceWorker.controller));
+  const installation = await page.evaluate(async () => {
+    const manifestLink = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+    if (!manifestLink) throw new Error('The app shell does not link a manifest.');
+    const response = await fetch(manifestLink.href);
+    const manifest = await response.json() as {
+      name: string;
+      short_name: string;
+      start_url: string;
+      display: string;
+      scope: string;
+      icons: Array<{ src: string; sizes: string; purpose?: string }>;
+    };
+    const registration = await navigator.serviceWorker.ready;
+    return {
+      manifest,
+      manifestHref: new URL(manifestLink.href).pathname,
+      controllingScript: navigator.serviceWorker.controller?.scriptURL ?? registration.active?.scriptURL ?? ''
+    };
+  });
+  expect(installation.manifestHref).toBe('/manifest.webmanifest');
+  expect(installation.manifest).toMatchObject({
+    name: 'Focus Study Sprint', short_name: 'Study Sprint', start_url: '/?v=6', display: 'standalone', scope: '/'
+  });
+  expect(installation.manifest.icons).toEqual(expect.arrayContaining([
+    expect.objectContaining({ src: '/icons/icon-192.png', sizes: '192x192' }),
+    expect.objectContaining({ src: '/icons/icon-512.png', sizes: '512x512', purpose: expect.stringContaining('maskable') })
+  ]));
+  expect(installation.controllingScript).toMatch(/\/sw\.js$/);
 });
 
 test('legal pages have landmarks, titles, and one primary heading', async ({ page }) => {
@@ -399,10 +464,60 @@ test('offline fallback and designed 404 render without console errors', async ({
   expect(errors).toEqual([]);
 });
 
-test('@claim:contour-price shows the one-time license terms and correct checkout target', async ({ page }) => {
+test('@claim:contour-price unlocks reusable sets and the latest 20 session records for $12', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('sb_license:focus-study-sprint', 'contour-regression-token'));
+  let licenseChecks = 0;
+  await page.route('https://api.sociobot.in/api/v1/products/focus-study-sprint/verify?license=contour-regression-token', async (route) => {
+    licenseChecks += 1;
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ valid: true, reason: 'ok' }) });
+  });
   await page.goto('/');
   const purchase = page.getByRole('link', { name: 'Buy Contour once for $12' });
   await expect(purchase).toHaveAttribute('href', 'https://api.sociobot.in/api/v1/products/focus-study-sprint/checkout');
   await expect(page.getByText('Contour adds saved prompt sets and your latest 20 session records.')).toBeVisible();
   await expect(page.getByText('Study sessions and JSON backup remain free.')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Load sample into my draft' }).click();
+  await page.getByRole('link', { name: 'Library' }).click();
+  await expect(page.getByRole('button', { name: 'Save current draft' })).toBeVisible();
+  page.once('dialog', (dialog) => {
+    expect(dialog.type()).toBe('prompt');
+    void dialog.accept('Exam review');
+  });
+  await page.getByRole('button', { name: 'Save current draft' }).click();
+  await expect(page.getByText('Exam review', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Use' }).click();
+  await expect(page.getByLabel(/One prompt and answer/)).toHaveValue(/What process do plants use to convert light into energy\? :: Photosynthesis/);
+
+  await page.getByRole('link', { name: 'Library' }).click();
+  const sessions = Array.from({ length: 21 }, (_, index) => {
+    const count = index + 1;
+    const startedAt = new Date(Date.UTC(2026, 0, count)).toISOString();
+    return {
+      id: `contour-session-${count}`,
+      startedAt,
+      endedAt: startedAt,
+      durationMinutes: 5,
+      endReason: 'complete',
+      promptCount: count,
+      responses: Array.from({ length: count }, (_, responseIndex) => ({
+        promptId: `prompt-${count}-${responseIndex}`,
+        question: `Prompt ${count}-${responseIndex}`,
+        expected: `Answer ${count}-${responseIndex}`,
+        response: '',
+        rating: 'recalled'
+      }))
+    };
+  });
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.locator('input[data-import]').setInputFiles({
+    name: 'contour-history.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({ product: 'focus-study-sprint', version: 1, exportedAt: '2026-01-31T00:00:00.000Z', sessions, decks: [] }))
+  });
+  await expect(page.getByText('Latest 20', { exact: true })).toBeVisible();
+  await expect(page.locator('.history-list li')).toHaveCount(20);
+  await expect(page.getByText('21 checked · 0 to revisit', { exact: true })).toBeVisible();
+  await expect(page.getByText('1 checked · 0 to revisit', { exact: true })).toHaveCount(0);
+  expect(licenseChecks).toBe(1);
 });
