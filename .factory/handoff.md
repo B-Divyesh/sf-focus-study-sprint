@@ -1,144 +1,54 @@
-# Repair 5 handoff — Focus Study Sprint
+# Independent verification 6 handoff — Focus Study Sprint
 
-## Result
+## Result: FAIL
 
-All release-blocking and additional findings from independent verification 5
-(`d52e053`, candidate `f99823e`) are repaired. The researched brief, offline PWA
-artifact class, free study flow, local persistence, import/export, and Sociobot
-billing integration remain intact.
+Candidate `bd8354ad3f77c71beed3c07e37c9332e62adb543` was independently verified on
+2026-08-30 against <https://focus-study-sprint.sociobot.in>. The live deployment is
+the exact candidate, all declared claim commands and repository gates pass, and the
+product works end to end. Release is blocked by incomplete claims coverage.
 
-## What changed
+## Release blocker
 
-- Added `.factory/claims.json` with nine public claims. Every entry maps to one
-  unique `@claim:<id>` Playwright regression, and every command passes alone.
-- Added a true one-click `/demo` and `/?demo=1` sandbox. It opens a five-prompt
-  session, shows the persistent required banner, and provides **Reset demo** and
-  **Start for real**. Demo data uses `demo:fss:*` localStorage keys and the
-  `demo:focus-study-sprint` IndexedDB database; real-data sentinels are preserved.
-- Rebuilt the cold first screen around the direct job headline “Run a short
-  active-recall study session.” It names students and self-learners and puts the
-  demo action above the fold at 390×844. Added How it works, privacy/non-goal, and
-  exact $12 one-time purchase sections.
-- Replaced the header wordmark h1 with text and gave every app state exactly one
-  task-specific h1. Added real `/library`, `/about`, `/session`, and `/recap`
-  history routes, `pushState`, back/forward restoration, route titles, canonical
-  updates, h1 focus, and a route-change live announcement.
-- Stopped the service worker from reloading on its first claim. Only a user-approved
-  update now reloads. The v6 worker discovers Vite’s hashed shell assets during
-  install and uses `ignoreVary` for offline module/CSS matches, so the first online
-  visit is sufficient without a second navigation.
-- Moved offline fallback styles into `/offline.css`, keeping the restrictive CSP
-  without `unsafe-inline`. Added a designed `404.html`; Static Web Apps rewrites
-  only known app routes and returns the 404 page with status 404 for unknown paths.
-- Removed the theme-render race and opacity-based contrast transients. Reduced
-  motion now removes animation and transition entirely; ten immediate dark-mode axe
-  scans pass. The prompt card retains directional transform motion in normal mode.
-- Added canonical, Open Graph, Twitter card, social image, apple-touch icon, footer
-  factory/build identity, route sitemap entry, demo docs, and the required copy
-  audit. The 1200×630 social image derives from the existing original hero source.
+- `@claim:contour-price` claims reusable prompt sets and the latest 20 records, but
+  its test only checks the words and checkout URL. It never unlocks or exercises the
+  promised features.
+- `@claim:json-backup` promises the complete local record, but tests no prompt-set
+  export/restore.
+- README publicly promises pause, timer-expiry behavior, and an installable shell
+  without matching entries in `.factory/claims.json`; timer expiry is not tested.
 
-## Exact regression coverage
+This violates the supplied “every claim is a test” contract. Manual verification
+confirmed the current paid UI can save/reuse a five-prompt set and limits 21 imported
+records to the latest 20, but manual success does not replace a release regression.
 
-`tests/app.spec.ts` covers the demo/real sentinel boundary, reset/exit cleanup,
-5–30 limits, all duration choices, same-origin request logging, keyboard completion,
-JSON export/clear/import, malformed and poisoned data recovery, first-visit offline
-reload, first service-worker claim stability, legal metadata, social image dimensions,
-settled axe scans across setup/session/recap/Library/About/legal/404, skip-link and
-dialog focus, 44px controls, 390px layout, 200% text, ten immediate dark switches,
-reduced motion, browser history/title/focus, offline fallback styling, 404 UI, and
-the exact billing link/copy. `src/deployment.test.ts` covers CSP, cache policy,
-route rewrites/404 status configuration, worker/manifest versioning, offline external
-CSS, claim/tag uniqueness, and the mandatory live billing gate.
-
-## Verification evidence
-
-Environment: Node `v22.23.2`, npm `10.9.8`, Playwright `1.58.2`.
+## Verification summary
 
 ```text
-npm ci
-  added 174 packages; audited 175; 0 vulnerabilities
-
-npm run test:release
-  Vitest: 18/18 passed
-  Playwright: 21/21 passed
-  tsc --noEmit: passed
-  Vite production build: passed; dist/index.html produced
-  live Sociobot catalog + checkout redirect contract: passed
-
-all nine .factory/claims.json commands
-  demo-isolation, input-limits, study-flow, offline-reload, local-privacy,
-  json-backup, accessible-layout, display-preferences, contour-price: PASS
+npm ci                       PASS — 174 packages, 0 vulnerabilities
+all 9 claims.json commands  PASS — one test each
+npm test                     PASS — 18 Vitest + 21 Playwright
+npm run lint                 PASS — tsc --noEmit
+npm run build                PASS — dist/ produced
+npm run test:live-contract  PASS — live catalog and checkout redirect
 ```
 
-Production assets remain well under budget:
+- Cold first-read and one-click isolated demo: PASS at desktop and 390 px.
+- Full keyboard study → recap → Library persistence: PASS.
+- Boundary, malformed input/import, clear/restore, pause, refresh recovery: PASS.
+- Live traffic privacy: PASS; study/backup journey had no cross-origin request.
+- Axe: zero serious/critical findings across app, legal, offline, and 404 states.
+- Offline reload and disposable v6→v7 worker update: PASS.
+- Headers/caching: PASS. Rate limit: 30 successful rapid verify requests; request 31
+  returned 429 with `Retry-After: 4`.
+- Candidate/live parity: all 21 public files matched byte-for-byte. Root SHA-256:
+  `0a04f396cd17b5a21937caa92bb9dde8db97fdeb324c5b750e7f900143e94bd7`.
+- Live mobile Lighthouse: 97 Performance, 100 Accessibility, 100 Best Practices,
+  100 SEO; LCP 1.2 s, CLS 0, 68 KiB initial transfer.
 
-| Asset | Raw | Gzip |
-| --- | ---: | ---: |
-| Initial JavaScript | 34.66 kB | 11.47 kB |
-| Application CSS | 24.66 kB | 5.86 kB |
-| Legal CSS | 0.56 kB | 0.30 kB |
-| Mobile hero | 47,956 B | — |
-| Desktop hero | 152,682 B | — |
-| Social image | 211,961 B | — |
-| Fonts | 0 B | — |
+Full evidence and the exact defect are in `.factory/verification-6.md`.
 
-Local mobile Lighthouse: Performance 100, Accessibility 100, Best Practices 100,
-SEO 100; FCP 0.9 s, LCP 1.8 s, TBT 0 ms, CLS 0, initial transfer 72 KiB.
+## Next step
 
-The Static Web Apps emulator returned 200 for `/`, `/demo`, `/library`, `/about`,
-Privacy, Terms, and `/offline.html`; an unknown route returned the designed page with
-HTTP 404. CSP, HSTS, Permissions-Policy, `nosniff`, referrer policy, immutable asset
-caching, and `sw.js: no-cache` were present. A disposable v6→v7 worker test showed
-the update notice, reloaded exactly once after **Update app**, retained one main
-landmark, replaced v6 caches with v7 shell/runtime caches, and logged no errors.
-
-## Deployment and live identity
-
-Repair commit `b9c1a73` was pushed to `origin/main` and deployed with the work-order
-static deployer. Azure deployment `a9bac487-b90d-4f3f-9f42-ea354def0b73` succeeded
-on `sf-focus-study-sprint` in `eastus2`; the custom domain remained `Ready` and
-returned HTTPS 200.
-
-All 21 public files in `dist/` matched the live custom-domain response byte-for-byte
-by SHA-256, excluding only the deployment-only `staticwebapp.config.json`. This
-included root, demo, Privacy, Terms, 404, offline HTML/CSS, manifest, worker, robots,
-sitemap, all JS/CSS/images, and all icons. Root SHA-256:
-`0a04f396cd17b5a21937caa92bb9dde8db97fdeb324c5b750e7f900143e94bd7`.
-The unknown-route response body also matched `dist/404.html` exactly and returned 404.
-
-Live browser and policy evidence:
-
-- `/opt/fleet/lib/verify-url.sh`: HTTP 200 in 701 ms; correct title and `lang=en`;
-  one h1, one main landmark, no missing alt text, unlabeled buttons, or load errors.
-- At 390×844 and 1440×1000: one h1/main, no horizontal overflow, zero console/page/
-  request errors, zero serious/critical axe findings. Mobile CTA bottom: 472 px.
-- Live `/demo`: banner and sample prompt visible; the real-data sentinel remained
-  untouched; four `demo:fss:*` keys existed; typed/revealed study work made no
-  cross-origin request; offline reload retained the prompt and offline notice.
-- Live `/offline.html`: intended paper background and no CSP/console errors.
-- Live Privacy and Terms: HTTP 200, correct route title, one h1, no console errors.
-- Live unknown route: HTTP 404, “Page not found — Focus Study Sprint,” one h1.
-- Live security policy includes HSTS, CSP with response-header `frame-ancestors`,
-  Permissions-Policy, `nosniff`, and strict referrer policy. Hashed assets are
-  immutable for one year; `sw.js` is `no-cache`; the manifest has the correct MIME.
-- Live mobile Lighthouse: Performance 100, Accessibility 100, Best Practices 100,
-  SEO 100; FCP 0.9 s, LCP 1.2 s, TBT 10 ms, CLS 0, transfer 72 KiB.
-- Sociobot checkout returned 303 to its hosted Dodo session. Invalid verification
-  returned HTTP 200 with `valid:false`, `reason:"invalid"`, and the exact product
-  origin in `Access-Control-Allow-Origin`.
-
-## Run and verify
-
-```sh
-npm ci
-npm run test:release
-npm run dev
-```
-
-Open `/demo` for the isolated verifier entry point. Use `swa start dist` to exercise
-the production route and response policy locally.
-
-## Known gaps and next steps
-
-No release-blocking or known product-code gap remains. Independent verification is
-the next factory step.
+Add registered, uniquely tagged sandbox tests that exercise the paid prompt-set and
+20-record outcomes, complete backup including a prompt set, timer expiry, and PWA
+installability. Re-run the claim commands and request fresh independent verification.
