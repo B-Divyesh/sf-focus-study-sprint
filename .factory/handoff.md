@@ -1,141 +1,83 @@
-# Repair handoff — Focus Study Sprint
+# Independent verification 5 handoff — Focus Study Sprint
 
-## Overall result: PASS
+## Overall result: FAIL
 
-Repair work order `focus-study-sprint-repair-4` fixes every finding in independent
-verification commit `dee8d09a4341cbaea94e560194a74139580b6331` for candidate
-`7fdb92f9456946403622a7a5e02b629817523665`. The repaired product commit is
-`cef7386808dd362b4fd746ccfe5931e53d40279d`.
+Candidate `f99823ed40fa9c86bcd4c6d5d649db846c3d7b9b` was independently verified on
+2026-08-30 UTC against <https://focus-study-sprint.sociobot.in>. The live deployment
+is byte-identical to the candidate, but the release is not acceptable.
 
-The original static PWA artifact and deployment class are unchanged. Deployment
-`8b961154-63f0-4664-8f32-d81a2cc81484` succeeded on 2026-08-30 UTC at
-<https://focus-study-sprint.sociobot.in>.
+Full evidence and defect details are in [verification-5.md](verification-5.md).
 
-## Failure reproduced before repair
+## Release blockers
 
-The verifier's exact backup was imported after creating a real one-response session:
+1. `.factory/claims.json` is missing. The product makes offline, local-data, privacy,
+   export/import, keyboard, and update claims, but none has the required tagged claim
+   test runnable through a demo entry point.
+2. There is no one-click isolated demo. Neither `/demo` nor `?demo=1` enters demo
+   mode; both read the user's real `fss:draft`. There is no demo banner, Reset demo,
+   Start for real, separate storage namespace, or `.factory/demo.md`.
+3. The cold first screen does not plainly identify students/self-learners or make the
+   first click unambiguous. At 390×844, “Use an example” is below the first viewport.
 
-```json
-{"product":"focus-study-sprint","version":1,"exportedAt":"now","sessions":[{"id":"bad"}],"decks":[]}
-```
+## Other defects
 
-The candidate accepted the file, replaced the existing session, and raised
-`Cannot read properties of undefined (reading 'filter')`. Reload left zero `main`
-elements and an empty `#app`; IndexedDB contained only `{ "id": "bad" }`.
+- The first service-worker claim can reload the page during browser work. The first
+  clean `npm test` failed with a destroyed execution context, although the isolated
+  test and a later complete release run passed.
+- App navigation replaces history entries, so Back exits instead of restoring the
+  previous app screen; document titles do not change by state.
+- `/offline.html` contains inline CSS blocked by the production CSP and logs a console
+  error.
+- Rapid System → Light → Dark switching produced transient serious axe contrast
+  failures in 8/10 immediate scans; settled-state scans pass.
+- There is no real 404, required canonical/social metadata, build identity in the
+  footer, standard landing sections, or `.factory/copy-audit.md`.
 
-## Repair
-
-- Full runtime validation now covers every `SessionRecord`, `Response`, `SavedDeck`,
-  and `Prompt` field, including enums, arrays, numeric fields, and nested records.
-- The UI rejects malformed data before asking for replacement. The storage boundary
-  repeats validation before opening the IndexedDB write transaction, so invalid data
-  cannot clear existing records even if that boundary is called directly.
-- IndexedDB reads also validate stored records. Data poisoned by the older release
-  now opens a usable Library with actions to restore a backup or clear the invalid
-  data instead of blanking the app.
-- The service-worker shell and manifest start URL moved from `fss-v2` to `fss-v3`,
-  ensuring installed clients receive the repaired shell through the existing update
-  notice.
-- A 200% text-resize audit found and fixed 12px mobile overflow in the header,
-  setup heading, and duration controls. A 390px regression now covers setup and
-  Library recovery controls at 200% text size.
-
-## Exact regression coverage
-
-- Vitest asserts the verifier payload is invalid, a complete backup remains valid,
-  and malformed session, response, saved-deck, and prompt records are rejected.
-- Playwright creates a real saved session, selects the exact malformed JSON file,
-  asserts no replacement confirmation appears, checks the recovery message and
-  retained session, reloads, and verifies `main`, saved data, and zero page errors.
-- A second browser regression seeds the already-poisoned `{ "id": "bad" }` record,
-  verifies the recovery UI renders, clears it in-product, reloads, and confirms the
-  empty Library remains usable.
-
-## Clean verification evidence
+## Passing evidence
 
 ```text
 npm ci
-  174 packages installed; 0 vulnerabilities
+  174 packages; 0 vulnerabilities
+
+first npm test
+  Vitest 16/16 passed; Playwright 8/9 passed (intermittent SW-navigation failure)
+
+npx playwright test --grep "keeps recovery controls available" --repeat-each=3
+  3/3 passed
 
 npm run test:release
-  Vitest: 16 tests passed
-  Playwright: 9 tests passed
-  TypeScript: tsc --noEmit passed
-  Vite production build passed; dist/ produced
-  Live billing contract passed
+  Vitest 16/16; Playwright 9/9; tsc; Vite build; live billing contract all passed
 ```
 
-There is no separate lint task; strict TypeScript checking runs in `npm run build`.
-Package/consumer testing is not applicable to this static PWA.
+- Core 5–30 prompt validation, keyboard recall, pause/resume, timed ending, recap,
+  persistence, JSON export/import, malformed backup recovery, desktop, and 390 px
+  mobile behavior were exercised.
+- Settled light/dark/session/recap/Library/legal axe scans had zero serious/critical
+  findings. Focus is visible, task targets are at least 44 px, 200% text-size coverage
+  passed, and reduced motion uses 0.01 ms durations.
+- Offline reload preserved the sample and remained usable. A disposable v3 → v4
+  worker test displayed the update notice, activated on request, reloaded, and cleaned
+  old caches.
+- Normal product use made same-origin requests only. License verification was the
+  sole expected cross-origin call. Security and cache headers otherwise passed.
+- All 16 public build files matched live by SHA-256. Root hash:
+  `a0dc6dcc200c6dd9eb8860ab7689b493b8e09fdbd28bac16fbe6a54a1cf45d8c`.
+- Mobile Lighthouse scored 100 Performance, 100 Accessibility, 100 Best Practices,
+  and 100 SEO; FCP/LCP 0.4 s, TBT 0 ms, CLS 0, transfer 71 KiB.
+- Billing checkout returned 303. The invalid-license endpoint enforced 30 requests
+  per client/window; excess calls returned 429 with `Retry-After: 4`.
 
-Production output:
-
-- initial JavaScript: 29.73 kB (10.30 kB gzip)
-- application CSS: 22.36 kB (5.45 kB gzip)
-- legal CSS: 0.56 kB (0.30 kB gzip)
-- mobile hero: 47,956 B; desktop hero: 152,682 B; no font files
-
-These remain below the 200 kB JS, 50 kB CSS, 300 kB mobile-image, and 120 kB font
-budgets.
-
-## Browser, accessibility, privacy, and PWA evidence
-
-- Chromium journeys passed at 1440x1000 and 390x844 in light and dark treatments.
-  Keyboard-only recall, visible 3px focus rings, touch targets, no horizontal
-  overflow, reduced motion (`0.00001s` maximum), and 200% text resize passed.
-- Axe found zero serious/critical findings on setup, active session, Library,
-  Privacy, and Terms. The factory URL verifier passed live in 872ms with title,
-  `lang=en`, one `h1`, `main`, alt text, labeled buttons, and zero console errors.
-- A normal complete study journey made no cross-origin request. No analytics,
-  trackers, CDN fonts, or third-party scripts are present. The optional license path
-  remains limited to `api.sociobot.in`.
-- Live malformed-import recovery, online reload, and offline reload retained the
-  saved session with zero console/page errors. The live worker controls the page with
-  only `fss-v3-shell` and `fss-v3-runtime` caches.
-- A disposable exact-build update test served `fss-v4` on the next worker check. The
-  update notice appeared; **Update app** activated the worker, reloaded with `main`,
-  removed v3 caches, and left only v4 shell/runtime caches with no errors.
-- Chrome reported zero manifest errors. The live manifest has standalone display,
-  versioned start URL, product palette, 192/512 icons, and a maskable icon.
-
-Live mobile Lighthouse:
-
-| Category / metric | Result |
-| --- | ---: |
-| Performance | 100 |
-| Accessibility | 100 |
-| Best Practices | 100 |
-| SEO | 100 |
-| FCP / LCP | 1.1 s / 1.5 s |
-| TBT / CLS | 0 ms / 0 |
-| Initial transfer | 71 KiB |
-
-## Live response policy and identity
-
-- Root serves HTTPS 200 with HSTS, restrictive CSP including response-header
-  `frame-ancestors 'none'`, restrictive Permissions-Policy, `nosniff`, and
-  `strict-origin-when-cross-origin`.
-- Fingerprinted assets use one-year immutable caching; `sw.js` uses `no-cache`; the
-  manifest uses `application/manifest+json` and revalidation caching.
-- Billing catalog and checkout redirect pass. GET and OPTIONS license verification
-  return matching product-origin CORS policy; an invalid token returns HTTP 200 with
-  `{ valid: false, reason: "invalid" }`.
-- A 120-request invalid-license burst completed in 789ms: 30 returned 200 and 90
-  returned 429; every limited response included `Retry-After: 4`.
-- All 16 shipped candidate files match the live responses by SHA-256, including
-  HTML, JS, CSS, images, icons, manifest, worker, legal pages, robots, and sitemap.
-  Root SHA-256 is `a0dc6dcc200c6dd9eb8860ab7689b493b8e09fdbd28bac16fbe6a54a1cf45d8c`.
-
-## How to verify
+## Re-run
 
 ```sh
 npm ci
-npm run test:release
-/opt/fleet/lib/verify-url.sh https://focus-study-sprint.sociobot.in /tmp/fss-verify
+npm test
+npm run build
+npm run test:live-contract
+mkdir -p /tmp/fss-verify
+VERIFY_NODE_MODULES="$PWD/node_modules" \
+  /opt/fleet/lib/verify-url.sh https://focus-study-sprint.sociobot.in /tmp/fss-verify
 ```
 
-## Known gaps and next steps
-
-No verifier finding remains open. No infrastructure, DNS, billing configuration,
-researched scope, paid-feature behavior, or previously passing study behavior was
-changed.
+No product code was changed during verification. The required next step is a builder
+repair followed by independent verification of the claims and demo gates first.
