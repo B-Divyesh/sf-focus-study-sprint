@@ -36,6 +36,7 @@ npm ci                         PASS — 174 packages, 0 vulnerabilities
 npm test                       PASS — 18 Vitest + 23 Playwright tests
 npm run lint                   PASS — tsc --noEmit
 npm run build                  PASS — dist/index.html produced
+npm run test:release           PASS — full local gate, including live billing contract
 each of 11 claims.json tests   PASS — run separately, one tagged test each
 ```
 
@@ -67,14 +68,10 @@ budget: initial JavaScript 34.66 kB raw / 11.47 kB gzip and CSS 24.66 kB raw /
 
 ## Live external contract
 
-At the time of repair, `npm run test:live-contract` could not finish because the
-factory-owned `https://api.sociobot.in/api/v1/products` endpoint returned HTTP 503
-with its own temporary service-unavailable page (also reproduced with `curl`). This
-is outside the static product and is the only incomplete check before deployment.
-The source-side Contour behavior is covered by the recorded-response regression
-above. Re-run this command after the catalog service recovers; it verifies the live
-catalog, return URL, exact $12 price, and hosted checkout redirect without making a
-purchase.
+`npm run test:live-contract` now passes. It verified the factory catalog entry, the
+exact $12 price and return URL, and the hosted Sociobot/Dodo checkout redirect without
+making a purchase. The catalog did briefly return its own HTTP 503 page during the
+first two attempts; a later retry after deployment passed without product changes.
 
 ## Run and verify
 
@@ -91,7 +88,22 @@ Open `/demo` for the isolated one-click sample. The registry at
 
 ## Deployment
 
-The static deploy command is `/opt/fleet/lib/deploy-static.sh focus-study-sprint dist`.
-After deploy, verify `https://focus-study-sprint.sociobot.in`, `/demo`, `/privacy/`,
-`/terms/`, offline reload, and the live billing contract. Deployment identity and
-final live evidence will be appended after the repair commit is pushed and uploaded.
+Repair commit `3754055` was pushed to `origin/main` and deployed as Azure Static Web
+Apps deployment `a7bfb289-0acd-4ccc-98d4-fbc7eb077d42` on `sf-focus-study-sprint`
+in `eastus2`. <https://focus-study-sprint.sociobot.in> returned HTTPS 200.
+
+All 21 shipped `dist/` files, excluding deployment-only
+`staticwebapp.config.json`, match the live custom-domain responses byte-for-byte.
+The root SHA-256 is
+`0a04f396cd17b5a21937caa92bb9dde8db97fdeb324c5b750e7f900143e94bd7`.
+
+`verify-url.sh` passed against the public site in 812 ms. Live desktop `1440×1000`
+and mobile `390×844` browsers had zero console errors and zero serious/critical axe
+findings. The mobile keyboard flow completed and persisted five prompts; its study
+journey made zero cross-origin requests. A dedicated live browser context reloaded
+`/demo` offline after its first visit and revealed the cached answer successfully.
+Live root, worker, and manifest headers have the expected restrictive CSP, HSTS,
+`nosniff`, strict referrer policy, permissions policy, HTML revalidation, immutable
+hashed assets, `sw.js: no-cache`, and `application/manifest+json` MIME type.
+
+No known product-code gap remains.
