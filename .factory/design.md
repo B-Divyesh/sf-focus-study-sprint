@@ -85,3 +85,5 @@ Generated with the factory Azure image deployment via `/opt/fleet/lib/gen-image.
 2026-08-27. The selected result and its prompt sidecar are stored under `assets/src/`;
 the optimized WebP ships in `public/assets/`. Generated specifically for this product;
 no third-party stock assets are used. Icons are original SVG linework authored in-repo.
+The 1200×630 `public/assets/social-card.jpg` is a center crop of that same original
+source image; it introduces no third-party or newly generated material.

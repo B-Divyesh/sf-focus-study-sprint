@@ -1,0 +1,65 @@
+[
+  {
+    "id": "demo-isolation",
+    "claim": "The one-click sample session uses isolated demo storage and does not change real study data.",
+    "where": "landing primary action, demo banner, README",
+    "test": "npm run test:e2e -- --grep \"@claim:demo-isolation\"",
+    "sandbox": "fresh browser context with a real-data sentinel; enter ?demo=1, reset, exit, and inspect storage namespaces"
+  },
+  {
+    "id": "input-limits",
+    "claim": "A study session accepts 5–30 prompt pairs and offers 5, 10, or 20 minutes.",
+    "where": "setup form, How it works, README",
+    "test": "npm run test:e2e -- --grep \"@claim:input-limits\"",
+    "sandbox": "isolated demo setup; assert four and 31 pairs fail, five pairs pass, and three duration choices exist"
+  },
+  {
+    "id": "study-flow",
+    "claim": "Keyboard users can complete a five-prompt recall session and receive a persisted recap.",
+    "where": "setup keyboard note, README",
+    "test": "npm run test:e2e -- --grep \"@claim:study-flow\"",
+    "sandbox": "fresh /demo session; use Enter and 1/2 for all prompts, inspect recap, then reload Library"
+  },
+  {
+    "id": "offline-reload",
+    "claim": "The app and sample session work offline after the first online visit.",
+    "where": "landing facts, README",
+    "test": "npm run test:e2e -- --grep \"@claim:offline-reload\"",
+    "sandbox": "dedicated fresh browser context; load /demo online, set context offline, reload, and reveal an answer"
+  },
+  {
+    "id": "local-privacy",
+    "claim": "Study data stays in the browser and the study flow sends no analytics or study content to another origin.",
+    "where": "landing privacy section, Privacy, README",
+    "test": "npm run test:e2e -- --grep \"@claim:local-privacy\"",
+    "sandbox": "fresh /demo session with request logging across a typed response, reveal, and rating"
+  },
+  {
+    "id": "json-backup",
+    "claim": "Everyone can export and restore the complete local record as JSON.",
+    "where": "landing facts and steps, Library, README",
+    "test": "npm run test:e2e -- --grep \"@claim:json-backup\"",
+    "sandbox": "fresh /demo session; create a record, export, clear, import the downloaded file, and assert restoration"
+  },
+  {
+    "id": "accessible-layout",
+    "claim": "The first action and 44px controls fit without horizontal overflow at 390px and desktop widths.",
+    "where": "landing first screen, README",
+    "test": "npm run test:e2e -- --grep \"@claim:accessible-layout\"",
+    "sandbox": "fresh pages at 390x844 and 1440x1000; measure the primary action, controls, and document width"
+  },
+  {
+    "id": "display-preferences",
+    "claim": "Light and dark themes keep serious contrast checks clear and reduced-motion removes visible movement.",
+    "where": "theme control, README",
+    "test": "npm run test:e2e -- --grep \"@claim:display-preferences\"",
+    "sandbox": "fresh reduced-motion context; cycle to dark ten times, scan immediately with axe, and inspect computed durations"
+  },
+  {
+    "id": "contour-price",
+    "claim": "Contour costs $12 once and adds reusable prompt sets plus the latest 20 session records.",
+    "where": "landing price section, Library, Terms, README",
+    "test": "npm run test:e2e -- --grep \"@claim:contour-price\"",
+    "sandbox": "fresh landing page; assert exact terms and the Sociobot product checkout target; live catalog is checked by test:live-contract"
+  }
+]

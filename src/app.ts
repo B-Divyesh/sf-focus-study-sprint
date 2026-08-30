@@ -1,10 +1,14 @@
 import './style.css';
-import { storage } from './db';
+import { createStorage } from './db';
 import { formatClock, isValidImport, recap, validatePromptInput } from './logic';
 import { cachedUnlock, captureLicenseFromUrl, CHECKOUT_URL, saveLicense, verifyLicense } from './license';
 import type { Prompt, Response as StudyResponse, SavedDeck, SessionRecord, Theme } from './types';
 
 type Screen = 'setup' | 'session' | 'recap' | 'library' | 'about';
+
+const DEMO_MODE = location.pathname === '/demo' || location.pathname.startsWith('/demo/') || new URLSearchParams(location.search).get('demo') === '1';
+const storage = createStorage(DEMO_MODE ? 'demo:focus-study-sprint' : 'focus-study-sprint');
+const localKey = (key: string): string => DEMO_MODE ? `demo:${key}` : key;
 
 const SAMPLE = `What process do plants use to convert light into energy? :: Photosynthesis
 What is the capital of Peru? :: Lima
@@ -14,8 +18,8 @@ What year did the Berlin Wall fall? :: 1989`;
 
 const state = {
   screen: 'setup' as Screen,
-  draft: localStorage.getItem('fss:draft') ?? '',
-  duration: Number(localStorage.getItem('fss:duration') ?? 10),
+  draft: localStorage.getItem(localKey('fss:draft')) ?? (DEMO_MODE ? SAMPLE : ''),
+  duration: Number(localStorage.getItem(localKey('fss:duration')) ?? (DEMO_MODE ? 5 : 10)),
   prompts: [] as Prompt[],
   current: 0,
   response: '',
@@ -28,9 +32,9 @@ const state = {
   recap: null as SessionRecord | null,
   decks: [] as SavedDeck[],
   sessions: [] as SessionRecord[],
-  unlocked: cachedUnlock(),
+  unlocked: DEMO_MODE || cachedUnlock(),
   licenseNotice: '',
-  theme: (localStorage.getItem('fss:theme') as Theme | null) ?? 'system',
+  theme: (localStorage.getItem(localKey('fss:theme')) as Theme | null) ?? 'system',
   online: navigator.onLine,
   updateReady: null as ServiceWorker | null,
   installPrompt: null as BeforeInstallPromptEvent | null,
@@ -46,8 +50,16 @@ const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('App mount not found');
 const mount: HTMLDivElement = app;
 
+document.querySelector<HTMLAnchorElement>('.skip-link')?.addEventListener('click', (event) => {
+  event.preventDefault();
+  const main = document.querySelector<HTMLElement>('#main');
+  main?.focus();
+  main?.scrollIntoView();
+});
+
 let timer: number | undefined;
-const ACTIVE_KEY = 'fss:active-session';
+const ACTIVE_KEY = localKey('fss:active-session');
+let reloadForUpdate = false;
 
 type ActiveSnapshot = Pick<typeof state, 'prompts' | 'current' | 'response' | 'revealed' | 'responses' | 'remaining' | 'endAt' | 'paused' | 'startedAt' | 'duration'>;
 
@@ -92,10 +104,39 @@ function icon(name: 'route' | 'moon' | 'sun' | 'system' | 'download' | 'lock' | 
 
 function setTheme(theme: Theme): void {
   state.theme = theme;
-  localStorage.setItem('fss:theme', theme);
+  localStorage.setItem(localKey('fss:theme'), theme);
   document.documentElement.dataset.theme = theme;
-  const color = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim();
-  document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', color || '#f4f0e6');
+  document.documentElement.style.colorScheme = theme === 'dark' ? 'dark' : theme === 'light' ? 'light' : '';
+  const systemDark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const color = theme === 'dark' || (theme === 'system' && systemDark) ? '#17201d' : '#f4f0e6';
+  document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', color);
+}
+
+const SCREEN_TITLES: Record<Screen, string> = {
+  setup: 'Focus Study Sprint — short active-recall sessions',
+  session: 'Study session — Focus Study Sprint',
+  recap: 'Session recap — Focus Study Sprint',
+  library: 'Library — Focus Study Sprint',
+  about: 'About — Focus Study Sprint'
+};
+
+function routeFor(screen: Screen): string {
+  if (DEMO_MODE) return screen === 'session' ? '/demo' : `/demo?screen=${screen}`;
+  return screen === 'setup' ? '/' : `/${screen}`;
+}
+
+function screenFromLocation(): Screen {
+  if (DEMO_MODE) {
+    const requested = new URLSearchParams(location.search).get('screen') as Screen | null;
+    return requested && ['setup', 'session', 'recap', 'library', 'about'].includes(requested) ? requested : 'session';
+  }
+  const requested = location.pathname.replace(/^\/+|\/+$/g, '') as Screen;
+  return ['session', 'recap', 'library', 'about'].includes(requested) ? requested : 'setup';
+}
+
+function setRoute(screen: Screen, replace = false): void {
+  const method = replace ? 'replaceState' : 'pushState';
+  history[method]({ screen }, '', routeFor(screen));
 }
 
 function shell(content: string): string {
@@ -104,27 +145,29 @@ function shell(content: string): string {
     : state.message ? `<div class="status-strip" role="status">${escapeHtml(state.message)}</div>` : '';
   return `
     <header class="site-header">
-      <a class="brand" href="#setup" data-nav="setup" aria-label="Focus Study Sprint, start">
+      <a class="brand" href="${DEMO_MODE ? '/demo?screen=setup' : '/'}" data-nav="setup" aria-label="Focus Study Sprint, start">
         ${icon('route')}
-        <h1>Focus Study Sprint</h1>
+        <span>Focus Study Sprint</span>
       </a>
       <nav aria-label="Primary">
-        <button class="nav-link ${state.screen === 'setup' ? 'active' : ''}" data-nav="setup">Start</button>
-        <button class="nav-link ${state.screen === 'library' ? 'active' : ''}" data-nav="library">Library</button>
-        <button class="nav-link ${state.screen === 'about' ? 'active' : ''}" data-nav="about">About</button>
+        <a href="${routeFor('setup')}" class="nav-link ${state.screen === 'setup' ? 'active' : ''}" data-nav="setup">Start</a>
+        <a href="${routeFor('library')}" class="nav-link ${state.screen === 'library' ? 'active' : ''}" data-nav="library">Library</a>
+        <a href="${routeFor('about')}" class="nav-link ${state.screen === 'about' ? 'active' : ''}" data-nav="about">About</a>
+        ${DEMO_MODE ? '' : '<a href="/demo" class="nav-link">Demo</a>'}
       </nav>
       <button class="icon-button theme-button" aria-label="Change color theme" title="Change color theme" data-theme-toggle>
         ${icon(state.theme === 'dark' ? 'moon' : state.theme === 'light' ? 'sun' : 'system')}
       </button>
     </header>
+    ${DEMO_MODE ? '<aside class="demo-banner" aria-label="Demo mode"><strong>Demo — sample data, nothing is saved</strong><div><button data-reset-demo>Reset demo</button><button data-start-real>Start for real</button></div></aside>' : ''}
     ${status}
     <main id="main" tabindex="-1">${content}</main>
     <footer>
-      <p>Private by design. No account, feed, streak, or behavioral analytics.</p>
-      <div><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Artwork made for this product with generative AI.</span></div>
+      <p>Short active-recall sessions for students and self-learners.</p>
+      <div><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Built by Param Factory</span><span>v1.1.0 · repair-5</span><span>Original artwork generated for this product.</span></div>
     </footer>
     <div class="sr-only" aria-live="polite" id="live-region"></div>
-    ${state.updateReady ? '<div class="update-toast" role="status"><span>A fresh map is ready.</span><button data-update>Update app</button></div>' : ''}
+    ${state.updateReady ? '<div class="update-toast" role="status"><span>An app update is ready.</span><button data-update>Update app</button></div>' : ''}
   `;
 }
 
@@ -134,13 +177,14 @@ function setupView(): string {
   return shell(`
     <section class="hero" aria-labelledby="setup-title">
       <div class="hero-copy">
-        <p class="eyebrow">A finite route for active recall</p>
-        <h2 id="setup-title">Study what you brought.<br><em>Then be done.</em></h2>
-        <p class="lede">Paste a small set of prompt-and-answer pairs. Move through one calm, timed session. Your work stays on this device.</p>
-        <ul class="trust-list" aria-label="Product principles">
-          <li>${icon('check')} No generated lessons</li>
-          <li>${icon('check')} No streaks or scores</li>
-          <li>${icon('check')} Works offline</li>
+        <p class="eyebrow">Focus Study Sprint</p>
+        <h1 id="setup-title" tabindex="-1">Run a short active-recall study session.</h1>
+        <p class="lede">For students and self-learners who want focused practice without streaks, feeds, or generated lessons.</p>
+        <div class="hero-actions"><a class="primary-action" href="/demo">Try it with sample data</a><p>Opens a five-prompt practice session.</p></div>
+        <ul class="trust-list" aria-label="Product facts">
+          <li>${icon('check')} Works offline after your first visit</li>
+          <li>${icon('check')} Study data stays in this browser</li>
+          <li>${icon('check')} Core study and JSON backup are free</li>
         </ul>
       </div>
       <picture class="hero-art">
@@ -150,21 +194,33 @@ function setupView(): string {
     </section>
     <section class="chart" aria-labelledby="chart-title">
       <div class="section-heading">
-        <div><p class="coordinate">ROUTE 01 · SET THE FIELD</p><h2 id="chart-title">Chart your prompts</h2></div>
-        <button class="text-button" data-sample>Use an example</button>
+        <div><p class="coordinate">SET UP YOUR SESSION</p><h2 id="chart-title">Add your prompts</h2></div>
+        <button class="text-button" data-sample>Load sample into my draft</button>
       </div>
       <label for="prompt-input">One prompt and answer per line, separated by <strong>::</strong> or a tab</label>
       <textarea id="prompt-input" rows="9" aria-describedby="prompt-help prompt-error" placeholder="What is the capital of Peru? :: Lima">${escapeHtml(state.draft)}</textarea>
       <div class="field-meta"><span id="prompt-help">Use 5–30 pairs. Nothing is uploaded.</span><span class="count ${count > 30 ? 'danger-text' : ''}">${count} / 30 ready</span></div>
       <p class="form-error" id="prompt-error" aria-live="polite">${state.draft && validation.message ? escapeHtml(validation.message) : ''}</p>
       <fieldset class="duration-field">
-        <legend>Choose the length of this route</legend>
+        <legend>Choose the session length</legend>
         <div class="duration-options">
           ${[5, 10, 20].map((minutes) => `<label class="duration"><input type="radio" name="duration" value="${minutes}" ${state.duration === minutes ? 'checked' : ''}><span><strong>${minutes}</strong> min</span></label>`).join('')}
         </div>
       </fieldset>
       <button class="primary-action" data-start ${validation.message || count < 5 ? 'disabled' : ''}>Begin this sprint <span aria-hidden="true">→</span></button>
       <p class="keyboard-note">Keyboard ready: press Tab to move, then Enter to begin.</p>
+    </section>
+    <section class="landing-section steps-section" aria-labelledby="steps-title">
+      <p class="coordinate">HOW IT WORKS</p><h2 id="steps-title">Finish one study sprint in three steps</h2>
+      <ol class="steps-list"><li><strong>Paste 5–30 pairs.</strong><span>Put one prompt and answer on each line.</span></li><li><strong>Recall each answer.</strong><span>Reveal it, then choose Recalled or Keep practicing.</span></li><li><strong>Review your recap.</strong><span>Export a JSON backup whenever you want one.</span></li></ol>
+    </section>
+    <section class="landing-section limits-section" aria-labelledby="limits-title">
+      <div><p class="coordinate">PRIVATE BY DEFAULT</p><h2 id="limits-title">Your study material stays local</h2><p>Prompts, responses, ratings, and recaps remain in this browser. The app sends no behavioral analytics.</p><a href="/privacy/">Read the privacy policy</a></div>
+      <div><p class="coordinate">CLEAR LIMITS</p><h2>Bring material you trust</h2><p>The app does not teach content, check correctness, or promise learning results.</p></div>
+    </section>
+    <section class="landing-section price-section" aria-labelledby="price-title">
+      <div><p class="coordinate">OPTIONAL ONE-TIME PURCHASE</p><h2 id="price-title">Keep reusable prompt sets for $12</h2><p>Contour adds saved prompt sets and your latest 20 session records. Study sessions and JSON backup remain free.</p></div>
+      <a class="secondary-action" href="${CHECKOUT_URL}">Buy Contour once for $12</a>
     </section>
   `);
 }
@@ -175,7 +231,7 @@ function sessionView(): string {
   return shell(`
     <section class="session-wrap" aria-labelledby="session-title">
       <div class="session-topline">
-        <div><p class="coordinate">PROMPT ${state.current + 1} OF ${state.prompts.length}</p><h2 id="session-title" class="sr-only">Active recall session</h2></div>
+        <div><p class="coordinate">PROMPT ${state.current + 1} OF ${state.prompts.length}</p><h1 id="session-title" class="sr-only" tabindex="-1">Active recall session</h1></div>
         <div class="timer ${state.paused ? 'is-paused' : ''}" aria-label="${formatClock(state.remaining)} remaining"><span>${formatClock(state.remaining)}</span><button class="text-button" data-pause>${state.paused ? 'Resume' : 'Pause'}</button></div>
       </div>
       <div class="route-progress" role="progressbar" aria-label="Prompt progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}"><span class="progress-${Math.round(percent)}"></span></div>
@@ -204,9 +260,9 @@ function recapView(): string {
   const practiceItems = session.responses.filter((item) => item.rating === 'practice');
   return shell(`
     <section class="recap-wrap" aria-labelledby="recap-title">
-      <p class="coordinate">ROUTE COMPLETE · PRIVATE RECAP</p>
-      <h2 id="recap-title">You reached a stopping point.</h2>
-      <p class="lede">${session.endReason === 'time' ? 'Time ended the route.' : 'You checked every prompt.'} This is a record of today’s practice, not a grade.</p>
+      <p class="coordinate">SESSION COMPLETE · PRIVATE RECAP</p>
+      <h1 id="recap-title" tabindex="-1">Your study session is complete.</h1>
+      <p class="lede">${session.endReason === 'time' ? 'The timer ended the session.' : 'You checked every prompt.'} This is a record of today’s practice, not a grade.</p>
       <dl class="recap-stats">
         <div><dt>Checked</dt><dd>${summary.answered}</dd></div>
         <div><dt>Recalled</dt><dd>${summary.recalled}</dd></div>
@@ -214,7 +270,7 @@ function recapView(): string {
       </dl>
       <div class="recap-actions"><button class="primary-action" data-nav="setup">Start another sprint</button><button class="secondary-action" data-export>Export my data ${icon('download')}</button></div>
       <section class="review-list" aria-labelledby="review-title">
-        <h3 id="review-title">Marked for more practice</h3>
+        <h2 id="review-title">Marked for more practice</h2>
         ${practiceItems.length ? `<ol>${practiceItems.map((item) => `<li><strong>${escapeHtml(item.question)}</strong><span>${escapeHtml(item.expected)}</span></li>`).join('')}</ol>` : '<p class="empty-copy">You did not mark any checked prompts for more practice.</p>'}
       </section>
     </section>
@@ -225,28 +281,28 @@ function libraryView(): string {
   const recent = [...state.sessions].sort((a, b) => b.startedAt.localeCompare(a.startedAt)).slice(0, state.unlocked ? 20 : 3);
   return shell(`
     <section class="library-wrap" aria-labelledby="library-title">
-      <p class="coordinate">LOCAL FIELD NOTES</p><h2 id="library-title">Your library</h2>
+      <p class="coordinate">LOCAL STUDY DATA</p><h1 id="library-title" tabindex="-1">Your library</h1>
       <p class="lede">Stored only in this browser. Export a backup whenever you like.</p>
       <div class="library-grid">
         <section aria-labelledby="decks-title">
-          <div class="section-heading"><h3 id="decks-title">Reusable prompt sets</h3>${state.unlocked ? '<button class="text-button" data-save-draft>Save current draft</button>' : ''}</div>
-          ${state.unlocked ? (state.decks.length ? `<ul class="deck-list">${state.decks.map((deck) => `<li><div><strong>${escapeHtml(deck.name)}</strong><span>${deck.prompts.length} prompts</span></div><div><button data-load-deck="${deck.id}">Use</button><button class="danger-button" data-delete-deck="${deck.id}" aria-label="Delete ${escapeHtml(deck.name)}">Delete</button></div></li>`).join('')}</ul>` : '<div class="empty-state"><span class="map-mark">×</span><h4>No saved sets yet</h4><p>Return to Start, paste a valid set, then save it here.</p></div>') : `
-            <div class="unlock-panel"><span class="map-mark">◇</span><h3>Keep routes you want to revisit</h3><p>The $12 one-time Contour unlock adds reusable prompt sets and your full on-device session list. Starting sessions and exporting data stay free.</p><a class="primary-action" href="${CHECKOUT_URL}">Buy once for $12</a><button class="text-button" data-license-dialog>Have a license? Restore it</button><p class="merchant-note">Secure checkout by Sociobot / Dodo, merchant of record. No subscription.</p></div>
+          <div class="section-heading"><h2 id="decks-title">Reusable prompt sets</h2>${state.unlocked ? '<button class="text-button" data-save-draft>Save current draft</button>' : ''}</div>
+          ${state.unlocked ? (state.decks.length ? `<ul class="deck-list">${state.decks.map((deck) => `<li><div><strong>${escapeHtml(deck.name)}</strong><span>${deck.prompts.length} prompts</span></div><div><button data-load-deck="${deck.id}">Use</button><button class="danger-button" data-delete-deck="${deck.id}" aria-label="Delete ${escapeHtml(deck.name)}">Delete</button></div></li>`).join('')}</ul>` : '<div class="empty-state"><span class="map-mark">×</span><h3>No saved sets yet</h3><p>Return to Start, paste a valid set, then save it here.</p></div>') : `
+            <div class="unlock-panel"><span class="map-mark">◇</span><h3>Reuse prompt sets</h3><p>The $12 one-time Contour license adds reusable prompt sets and your full on-device session list. Starting sessions and exporting data stay free.</p><a class="primary-action" href="${CHECKOUT_URL}">Buy Contour once for $12</a><button class="text-button" data-license-dialog>Have a license? Restore it</button><p class="merchant-note">Secure checkout by Sociobot / Dodo, merchant of record. No subscription.</p></div>
           `}
         </section>
         <section aria-labelledby="history-title">
-          <div class="section-heading"><h3 id="history-title">Recent sessions</h3><span>${state.unlocked ? 'Latest 20' : 'Latest 3'}</span></div>
-          ${recent.length ? `<ol class="history-list">${recent.map((session) => { const result = recap(session.responses); return `<li><time datetime="${session.startedAt}">${new Date(session.startedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time><span>${result.answered} checked · ${result.practice} to revisit</span></li>`; }).join('')}</ol>` : '<div class="empty-state"><span class="map-mark">○</span><h4>No sessions recorded</h4><p>Your first private recap will appear here.</p></div>'}
+          <div class="section-heading"><h2 id="history-title">Recent sessions</h2><span>${state.unlocked ? 'Latest 20' : 'Latest 3'}</span></div>
+          ${recent.length ? `<ol class="history-list">${recent.map((session) => { const result = recap(session.responses); return `<li><time datetime="${session.startedAt}">${new Date(session.startedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time><span>${result.answered} checked · ${result.practice} to revisit</span></li>`; }).join('')}</ol>` : '<div class="empty-state"><span class="map-mark">○</span><h3>No sessions recorded</h3><p>Your first private recap will appear here.</p></div>'}
           ${!state.unlocked && state.sessions.length > 3 ? '<p class="quiet-notice">Older sessions remain in your export and appear after unlocking.</p>' : ''}
         </section>
       </div>
       <section class="data-controls" aria-labelledby="data-title">
-        <h3 id="data-title">Own your data</h3><p>Download or restore a JSON backup. Import replaces the data currently on this device.</p>
+        <h2 id="data-title">Own your data</h2><p>Download or restore a JSON backup. Import replaces the data currently on this device.</p>
         <div><button class="secondary-action" data-export>Export JSON ${icon('download')}</button><label class="secondary-action file-action">Import JSON<input type="file" accept="application/json,.json" data-import></label><button class="danger-button" data-clear>Clear local data</button></div>
       </section>
       ${state.installPrompt ? '<button class="install-card" data-install><strong>Install for quicker offline access</strong><span>Add the app to this device. No account needed. →</span></button>' : ''}
       ${state.licenseNotice ? `<p class="quiet-notice">${escapeHtml(state.licenseNotice)} <a href="${CHECKOUT_URL}">Get a new license</a>.</p>` : ''}
-      <dialog id="license-dialog" aria-labelledby="license-title"><form method="dialog"><button class="dialog-close" value="cancel" aria-label="Close">×</button><p class="coordinate">RESTORE PURCHASE</p><h3 id="license-title">Enter your license</h3><p>Paste the token from your purchase email. Verification never blocks free study.</p><label for="license-input">License token</label><input id="license-input" autocomplete="off"><p class="form-error" data-license-error aria-live="polite"></p><button class="primary-action" type="button" data-restore-license>Verify and restore</button></form></dialog>
+      <dialog id="license-dialog" aria-labelledby="license-title"><form method="dialog"><button class="dialog-close" value="cancel" aria-label="Close">×</button><p class="coordinate">RESTORE PURCHASE</p><h2 id="license-title">Enter your license</h2><p>Paste the token from your purchase email. Verification never blocks free study.</p><label for="license-input">License token</label><input id="license-input" autocomplete="off"><p class="form-error" data-license-error aria-live="polite"></p><button class="primary-action" type="button" data-restore-license>Verify and restore</button></form></dialog>
     </section>
   `);
 }
@@ -254,10 +310,9 @@ function libraryView(): string {
 function aboutView(): string {
   return shell(`
     <section class="about-wrap" aria-labelledby="about-title">
-      <p class="coordinate">WHY THIS MAP IS SMALL</p><h2 id="about-title">Practice without an attention tax.</h2>
+      <p class="coordinate">PRODUCT SCOPE</p><h1 id="about-title" tabindex="-1">Practice without streaks or feeds</h1>
       <p class="lede">Focus Study Sprint supports short active-recall practice. It does not generate teaching material, judge mastery, or try to make you return.</p>
-      <div class="principles-grid"><article><span>01</span><h3>Bring your own material</h3><p>You decide what matters. The app only makes a quiet route through it.</p></article><article><span>02</span><h3>Finish on purpose</h3><p>A timer and finite prompt set give the session a real edge. Completion is the product.</p></article><article><span>03</span><h3>Keep it private</h3><p>Prompts, answers, ratings, and saved sets live in IndexedDB on this device.</p></article></div>
-      <aside class="calm-note"><p>“A good study tool should be easy to leave.”</p><span>Product principle, not a learning claim</span></aside>
+      <div class="principles-grid"><article><span>01</span><h2>Bring your own material</h2><p>You choose the material. The app presents one prompt at a time.</p></article><article><span>02</span><h2>Finish on purpose</h2><p>A timer and finite prompt set give the session a clear end.</p></article><article><span>03</span><h2>Keep it private</h2><p>Prompts, answers, ratings, and saved sets stay in this browser.</p></article></div>
     </section>
   `);
 }
@@ -265,24 +320,31 @@ function aboutView(): string {
 function render(options: { focus?: string } = {}): void {
   window.clearInterval(timer);
   mount.innerHTML = state.screen === 'setup' ? setupView() : state.screen === 'session' ? sessionView() : state.screen === 'recap' ? recapView() : state.screen === 'library' ? libraryView() : aboutView();
+  document.title = DEMO_MODE ? 'Demo — Focus Study Sprint' : SCREEN_TITLES[state.screen];
+  const publicPath = DEMO_MODE ? '/demo' : routeFor(state.screen);
+  document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.setAttribute('href', `https://focus-study-sprint.sociobot.in${publicPath}`);
+  document.querySelector<HTMLMetaElement>('meta[property="og:url"]')?.setAttribute('content', `https://focus-study-sprint.sociobot.in${publicPath}`);
+  document.querySelector<HTMLMetaElement>('meta[property="og:title"]')?.setAttribute('content', document.title);
+  document.querySelector<HTMLMetaElement>('meta[name="twitter:title"]')?.setAttribute('content', document.title);
   bindEvents();
   if (state.screen === 'session' && !state.paused) startTimer();
   const focusTarget = options.focus;
   if (focusTarget) requestAnimationFrame(() => document.querySelector<HTMLElement>(focusTarget)?.focus());
 }
 
-function navigate(screen: Screen): void {
+function navigate(screen: Screen, replace = false): void {
   if (state.screen === 'session' && screen !== 'session' && state.responses.length + state.current > 0) {
     if (!window.confirm('End this session? Your checked prompts will be saved in a recap.')) return;
     finishSession('complete');
     return;
   }
   state.screen = screen;
-  history.replaceState({}, '', `#${screen}`);
-  render({ focus: '#main' });
+  setRoute(screen, replace);
+  render({ focus: 'h1' });
+  announce(document.title);
 }
 
-function startSession(): void {
+function startSession(replaceRoute = false): void {
   const validation = validatePromptInput(state.draft);
   if (validation.message) { state.message = validation.message; render({ focus: '#prompt-input' }); return; }
   state.prompts = validation.prompts;
@@ -297,6 +359,7 @@ function startSession(): void {
   state.screen = 'session';
   state.message = '';
   persistActive();
+  setRoute('session', replaceRoute);
   render({ focus: '#response-input' });
 }
 
@@ -342,6 +405,7 @@ async function finishSession(reason: 'complete' | 'time'): Promise<void> {
   state.startedAt = '';
   localStorage.removeItem(ACTIVE_KEY);
   try { await storage.putSession(record); } catch { state.message = 'The recap could not be saved. Export your data before leaving.'; }
+  setRoute('recap');
   render({ focus: '#recap-title' });
 }
 
@@ -377,17 +441,55 @@ async function importData(file: File): Promise<void> {
   render();
 }
 
+async function resetDemo(): Promise<void> {
+  if (!DEMO_MODE) return;
+  await storage.clearAll();
+  Object.keys(localStorage).filter((key) => key.startsWith('demo:fss:')).forEach((key) => localStorage.removeItem(key));
+  Object.assign(state, {
+    screen: 'setup' as Screen,
+    draft: SAMPLE,
+    duration: 5,
+    prompts: [],
+    current: 0,
+    response: '',
+    revealed: false,
+    responses: [],
+    remaining: 0,
+    endAt: 0,
+    paused: false,
+    startedAt: '',
+    recap: null,
+    decks: [],
+    sessions: [],
+    unlocked: true,
+    licenseNotice: '',
+    message: ''
+  });
+  localStorage.setItem(localKey('fss:draft'), SAMPLE);
+  localStorage.setItem(localKey('fss:duration'), '5');
+  startSession(true);
+}
+
+async function leaveDemo(): Promise<void> {
+  if (!DEMO_MODE) return;
+  await storage.clearAll();
+  Object.keys(localStorage).filter((key) => key.startsWith('demo:fss:')).forEach((key) => localStorage.removeItem(key));
+  location.assign('/');
+}
+
 function bindEvents(): void {
   document.querySelectorAll<HTMLElement>('[data-nav]').forEach((element) => element.addEventListener('click', (event) => { event.preventDefault(); navigate(element.dataset.nav as Screen); }));
-  document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
+  document.querySelector<HTMLButtonElement>('[data-theme-toggle]')?.addEventListener('click', (event) => {
     const next: Theme = state.theme === 'system' ? 'light' : state.theme === 'light' ? 'dark' : 'system';
-    setTheme(next); render(); announce(`Theme set to ${next}`);
+    setTheme(next);
+    (event.currentTarget as HTMLButtonElement).innerHTML = icon(next === 'dark' ? 'moon' : next === 'light' ? 'sun' : 'system');
+    announce(`Theme set to ${next}`);
   });
   const input = document.querySelector<HTMLTextAreaElement>('#prompt-input');
-  input?.addEventListener('input', () => { state.draft = input.value; localStorage.setItem('fss:draft', state.draft); renderSetupFeedback(); });
-  document.querySelector('[data-sample]')?.addEventListener('click', () => { state.draft = SAMPLE; localStorage.setItem('fss:draft', SAMPLE); render({ focus: '#prompt-input' }); });
-  document.querySelectorAll<HTMLInputElement>('input[name="duration"]').forEach((radio) => radio.addEventListener('change', () => { state.duration = Number(radio.value); localStorage.setItem('fss:duration', radio.value); }));
-  document.querySelector('[data-start]')?.addEventListener('click', startSession);
+  input?.addEventListener('input', () => { state.draft = input.value; localStorage.setItem(localKey('fss:draft'), state.draft); renderSetupFeedback(); });
+  document.querySelector('[data-sample]')?.addEventListener('click', () => { state.draft = SAMPLE; localStorage.setItem(localKey('fss:draft'), SAMPLE); render({ focus: '#prompt-input' }); });
+  document.querySelectorAll<HTMLInputElement>('input[name="duration"]').forEach((radio) => radio.addEventListener('change', () => { state.duration = Number(radio.value); localStorage.setItem(localKey('fss:duration'), radio.value); }));
+  document.querySelector('[data-start]')?.addEventListener('click', () => startSession());
   document.querySelector('[data-reveal]')?.addEventListener('click', reveal);
   document.querySelector<HTMLTextAreaElement>('#response-input')?.addEventListener('input', (event) => { state.response = (event.target as HTMLTextAreaElement).value; persistActive(); });
   document.querySelectorAll<HTMLButtonElement>('[data-rate]').forEach((button) => button.addEventListener('click', () => rate(button.dataset.rate as 'practice' | 'recalled')));
@@ -407,14 +509,14 @@ function bindEvents(): void {
   document.querySelector('[data-save-draft]')?.addEventListener('click', async () => {
     const validation = validatePromptInput(state.draft);
     if (validation.message) { state.message = `Current draft was not saved: ${validation.message}`; render(); return; }
-    const name = window.prompt('Name this prompt set:', `Route ${state.decks.length + 1}`)?.trim();
+    const name = window.prompt('Name this prompt set:', `Prompt set ${state.decks.length + 1}`)?.trim();
     if (!name) return;
     const deck: SavedDeck = { id: crypto.randomUUID(), name, createdAt: new Date().toISOString(), prompts: validation.prompts };
     await storage.putDeck(deck); state.decks.push(deck); state.message = `Saved “${name}” on this device.`; render();
   });
   document.querySelectorAll<HTMLButtonElement>('[data-load-deck]').forEach((button) => button.addEventListener('click', () => {
     const deck = state.decks.find((item) => item.id === button.dataset.loadDeck); if (!deck) return;
-    state.draft = deck.prompts.map((prompt) => `${prompt.question} :: ${prompt.answer}`).join('\n'); localStorage.setItem('fss:draft', state.draft); state.screen = 'setup'; render({ focus: '#prompt-input' });
+    state.draft = deck.prompts.map((prompt) => `${prompt.question} :: ${prompt.answer}`).join('\n'); localStorage.setItem(localKey('fss:draft'), state.draft); state.screen = 'setup'; setRoute('setup'); render({ focus: '#prompt-input' });
   }));
   document.querySelectorAll<HTMLButtonElement>('[data-delete-deck]').forEach((button) => button.addEventListener('click', async () => {
     const deck = state.decks.find((item) => item.id === button.dataset.deleteDeck); if (!deck || !window.confirm(`Delete the saved set “${deck.name}”?`)) return;
@@ -430,7 +532,9 @@ function bindEvents(): void {
     else if (error) error.textContent = navigator.onLine ? 'That license is not active for this product.' : 'You are offline. Connect once to verify this license.';
   });
   document.querySelector('[data-install]')?.addEventListener('click', async () => { await state.installPrompt?.prompt(); state.installPrompt = null; render(); });
-  document.querySelector('[data-update]')?.addEventListener('click', () => state.updateReady?.postMessage({ type: 'SKIP_WAITING' }));
+  document.querySelector('[data-update]')?.addEventListener('click', () => { reloadForUpdate = true; state.updateReady?.postMessage({ type: 'SKIP_WAITING' }); });
+  document.querySelector('[data-reset-demo]')?.addEventListener('click', () => void resetDemo());
+  document.querySelector('[data-start-real]')?.addEventListener('click', () => void leaveDemo());
 }
 
 function renderSetupFeedback(): void {
@@ -453,6 +557,13 @@ document.addEventListener('keydown', (event) => {
 window.addEventListener('online', () => { state.online = true; state.message = 'Back online. Your local work never stopped.'; render(); });
 window.addEventListener('offline', () => { state.online = false; render(); });
 window.addEventListener('beforeinstallprompt', (event) => { event.preventDefault(); state.installPrompt = event as BeforeInstallPromptEvent; if (state.screen === 'library') render(); });
+window.addEventListener('popstate', () => {
+  const next = screenFromLocation();
+  if ((next === 'session' && !state.startedAt) || (next === 'recap' && !state.recap)) state.screen = 'setup';
+  else state.screen = next;
+  render({ focus: 'h1' });
+  announce(document.title);
+});
 
 async function registerServiceWorker(): Promise<void> {
   if (!('serviceWorker' in navigator)) return;
@@ -464,13 +575,19 @@ async function registerServiceWorker(): Promise<void> {
       if (installing.state === 'installed' && navigator.serviceWorker.controller) { state.updateReady = installing; render(); }
     });
   });
-  navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!reloadForUpdate) return;
+    reloadForUpdate = false;
+    window.location.reload();
+  });
 }
 
 async function init(): Promise<void> {
   setTheme(state.theme);
-  captureLicenseFromUrl();
-  state.unlocked = cachedUnlock();
+  if (!DEMO_MODE) {
+    captureLicenseFromUrl();
+    state.unlocked = cachedUnlock();
+  }
   try { [state.sessions, state.decks] = await Promise.all([storage.getSessions(), storage.getDecks()]); }
   catch (error) {
     state.message = error instanceof Error && error.message.startsWith('Stored ')
@@ -479,14 +596,24 @@ async function init(): Promise<void> {
   }
   const restored = restoreActive();
   if (!restored) {
-    const hash = location.hash.slice(1) as Screen;
-    if (['setup', 'library', 'about'].includes(hash)) state.screen = hash;
+    state.screen = screenFromLocation();
+    if (state.screen === 'recap' || (state.screen === 'session' && !DEMO_MODE)) state.screen = 'setup';
+    if (DEMO_MODE && state.screen === 'session') {
+      localStorage.setItem(localKey('fss:draft'), SAMPLE);
+      localStorage.setItem(localKey('fss:duration'), '5');
+      startSession(true);
+    }
   }
   if (restored && state.remaining <= 0) await finishSession('time');
-  else render();
+  else if (!(DEMO_MODE && !restored && state.screen === 'session')) {
+    setRoute(state.screen, true);
+    render();
+  }
   void registerServiceWorker();
-  const verdict = await verifyLicense();
-  if (verdict && verdict.valid !== state.unlocked) { state.unlocked = verdict.valid; if (!verdict.valid) state.licenseNotice = 'Your saved license is no longer active.'; render(); }
+  if (!DEMO_MODE) {
+    const verdict = await verifyLicense();
+    if (verdict && verdict.valid !== state.unlocked) { state.unlocked = verdict.valid; if (!verdict.valid) state.licenseNotice = 'Your saved license is no longer active.'; render(); }
+  }
 }
 
 void init();

@@ -2,23 +2,27 @@
 
 A calm, installable active-recall utility for students and self-learners who want a
 short practice session without streaks, rewards, feeds, reminders, or generated
-content. Paste 5–30 `prompt :: answer` pairs, choose 5/10/20 minutes, and work through
-one finite route. Recaps and reusable sets stay in the browser.
+content. Paste 5–30 `prompt :: answer` pairs, choose 5/10/20 minutes, and finish one
+focused session. Recaps and reusable sets stay in the browser.
 
 Live product: <https://focus-study-sprint.sociobot.in>
 
+Try the isolated sample session: <https://focus-study-sprint.sociobot.in/demo>
+
 ## What v1 includes
 
-- Keyboard-first recall loop (`Enter` to reveal, `1` / `2` to self-rate), pause, and
-  time/completion endings.
-- Private recaps and recent session history in IndexedDB.
-- JSON export/import, available to everyone.
-- Installable PWA with cached app shell, offline sessions, and an update notice.
-- System/light/dark themes, reduced-motion support, responsive 390px layout, and
-  screen-reader announcements.
+- Five to 30 prompt pairs, 5/10/20-minute sessions, pause, and time/completion endings.
+- Keyboard recall (`Enter` to reveal and `1` / `2` to self-rate) with a private recap.
+- Local session history plus JSON backup and restore.
+- An installable app shell that works offline after the first online visit.
+- System, light, and dark themes with reduced motion and a tested 390px layout.
 - Optional $12 one-time Contour license: reusable saved prompt sets and extended
   on-device history. Checkout and verification use only the Sociobot billing API.
 - Plain-language `/privacy/` and `/terms/` pages.
+
+The **Try it with sample data** action opens `/demo`. Demo data uses `demo:` storage
+only. Resetting or leaving the demo clears that sample workspace without changing
+real study data.
 
 The app supports practice organization; it does not teach content, verify correctness,
 or claim learning outcomes.
@@ -28,7 +32,7 @@ or claim learning outcomes.
 Requires Node.js 20+ and npm.
 
 ```sh
-npm install
+npm ci
 npm run dev
 ```
 
@@ -69,8 +73,9 @@ is missing; it never starts a payment.
 ## Data and privacy
 
 Prompts, responses, recaps, saved sets, display preference, and any license token are
-local to the browser. No analytics or advertising scripts ship. Clearing site data can
-remove records; use Library → Export JSON for a portable backup.
+local to the browser. No analytics or advertising scripts ship. License verification
+contacts only the Sociobot billing API. Clearing site data can remove records; use
+Library → Export JSON for a portable backup.
 
 ## Deployment
 
@@ -83,5 +88,7 @@ release gate above must pass before deployment is considered releasable.
 
 - Product research: [`.factory/brief.json`](.factory/brief.json)
 - Visual system and asset provenance: [`.factory/design.md`](.factory/design.md)
+- Demo sandbox: [`.factory/demo.md`](.factory/demo.md)
+- Tested product claims: [`.factory/claims.json`](.factory/claims.json)
 - Verification and handoff: [`.factory/handoff.md`](.factory/handoff.md)
 - License: [MIT](LICENSE)

@@ -1,10 +1,21 @@
-const VERSION = 'fss-v3';
+const VERSION = 'fss-v6';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
-const PRECACHE = ['/', '/offline.html', '/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/assets/topographic-route-768.webp', '/assets/topographic-route-1280.webp', '/privacy/', '/terms/'];
+const PRECACHE = ['/', '/demo', '/library', '/about', '/offline.html', '/offline.css', '/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png', '/assets/topographic-route-768.webp', '/assets/topographic-route-1280.webp', '/assets/social-card.jpg', '/privacy/', '/terms/'];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(SHELL).then((cache) => cache.addAll(PRECACHE)));
+  event.waitUntil((async () => {
+    const cache = await caches.open(SHELL);
+    await cache.addAll(PRECACHE);
+    const builtAssets = new Set();
+    for (const page of ['/', '/demo', '/privacy/', '/terms/']) {
+      const response = await cache.match(page, { ignoreVary: true });
+      const html = await response?.text();
+      if (!html) continue;
+      for (const match of html.matchAll(/(?:src|href)="(\/assets\/[^"?]+)"/g)) builtAssets.add(match[1]);
+    }
+    await cache.addAll([...builtAssets]);
+  })());
 });
 
 self.addEventListener('activate', (event) => {
@@ -25,11 +36,12 @@ self.addEventListener('fetch', (event) => {
   }
   if (event.request.mode === 'navigate') {
     event.respondWith(fetch(event.request).then((response) => {
-      const copy = response.clone(); caches.open(RUNTIME).then((cache) => cache.put(event.request, copy)); return response;
-    }).catch(async () => (await caches.match(event.request)) || (await caches.match('/')) || caches.match('/offline.html')));
+      if (response.ok) { const copy = response.clone(); caches.open(RUNTIME).then((cache) => cache.put(event.request, copy)); }
+      return response;
+    }).catch(async () => (await caches.match(event.request, { ignoreVary: true })) || (await caches.match('/', { ignoreVary: true })) || caches.match('/offline.html', { ignoreVary: true })));
     return;
   }
-  event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => {
+  event.respondWith(caches.match(event.request, { ignoreVary: true }).then((cached) => cached || fetch(event.request).then((response) => {
     if (response.ok) { const copy = response.clone(); caches.open(RUNTIME).then((cache) => cache.put(event.request, copy)); }
     return response;
   })));

@@ -24,7 +24,7 @@ export function validatePromptInput(input: string): { prompts: Prompt[]; message
     return { prompts, message: 'Each non-empty line needs a prompt and answer separated by :: or a tab.' };
   }
   if (prompts.length < 5) return { prompts, message: `Add ${5 - prompts.length} more pair${prompts.length === 4 ? '' : 's'} to begin.` };
-  if (prompts.length > 30) return { prompts, message: 'Keep this route finite: use 30 pairs or fewer.' };
+  if (prompts.length > 30) return { prompts, message: 'Use 30 pairs or fewer.' };
   return { prompts, message: '' };
 }
 

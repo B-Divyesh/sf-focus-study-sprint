@@ -4,22 +4,34 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f4f0e6" />
+    <meta name="description" content="How Focus Study Sprint stores study data locally and handles license checks." />
+    <link rel="canonical" href="https://focus-study-sprint.sociobot.in/privacy/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Privacy — Focus Study Sprint" />
+    <meta property="og:description" content="How Focus Study Sprint stores study data locally and handles license checks." />
+    <meta property="og:url" content="https://focus-study-sprint.sociobot.in/privacy/" />
+    <meta property="og:image" content="https://focus-study-sprint.sociobot.in/assets/social-card.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Privacy — Focus Study Sprint" />
+    <meta name="twitter:description" content="How Focus Study Sprint stores study data locally and handles license checks." />
+    <meta name="twitter:image" content="https://focus-study-sprint.sociobot.in/assets/social-card.jpg" />
     <title>Privacy — Focus Study Sprint</title>
     <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="stylesheet" href="/src/style.css" />
     <link rel="stylesheet" href="/src/legal.css" />
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to main content</a>
-    <header class="legal-header"><a class="brand" href="/"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19c2-7 5-12 9-12s4 6 7 2"/><circle cx="4" cy="19" r="2"/><circle cx="20" cy="9" r="2"/></svg><span>Focus Study Sprint</span></a></header>
+    <header class="site-header"><a class="brand" href="/"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19c2-7 5-12 9-12s4 6 7 2"/><circle cx="4" cy="19" r="2"/><circle cx="20" cy="9" r="2"/></svg><span>Focus Study Sprint</span></a><nav aria-label="Primary"><a class="nav-link" href="/">Start</a><a class="nav-link" href="/demo">Demo</a><a class="nav-link active" href="/privacy/">Privacy</a></nav></header>
     <main id="main" class="legal-page">
       <p class="coordinate">PLAIN-LANGUAGE POLICY · 27 AUGUST 2026</p>
       <h1>Privacy</h1>
       <p class="lede">Your study material belongs on your device. We designed the product around that fact.</p>
       <h2>What stays local</h2>
-      <p>Prompt sets, your typed responses, recall ratings, session recaps, theme preference, and license token are stored in your browser using IndexedDB or localStorage. We do not receive this study data. You can export it, import it, or clear it from the Library.</p>
+      <p>Your browser stores prompt sets, typed responses, ratings, recaps, theme preference, and the license token. We do not receive this study data. You can export it, import it, or clear it from the Library.</p>
       <h2>What leaves the device</h2>
-      <p>The static app may receive ordinary server request logs needed for security and delivery, such as an IP address, timestamp, requested path, and user agent. We do not add behavioral analytics, advertising trackers, or third-party fonts and scripts.</p>
+      <p>The server may record an IP address, timestamp, requested path, and user agent for security and delivery. We do not add behavioral analytics, advertising trackers, or third-party fonts and scripts.</p>
       <p>If you buy or verify a Contour license, your browser contacts the Sociobot billing API. Sociobot and Dodo, the merchant of record, process checkout and license status under their own required payment records. Study prompts and responses are never sent with that request.</p>
       <h2>Offline cache</h2>
       <p>The service worker stores the application shell and artwork on your device so the app can open offline. Clear this site’s browser data to remove the cache and all local records.</p>
@@ -29,5 +41,6 @@
       <p>Questions about this policy can be sent to <a class="legal-link" href="mailto:privacy@sociobot.in">privacy@sociobot.in</a>.</p>
       <p><a class="legal-link" href="/">← Return to the app</a></p>
     </main>
+    <footer><p>Short active-recall sessions for students and self-learners.</p><div><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Built by Param Factory</span><span>v1.1.0 · repair-5</span></div></footer>
   </body>
 </html>

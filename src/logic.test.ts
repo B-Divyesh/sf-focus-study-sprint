@@ -12,7 +12,7 @@ describe('prompt parsing', () => {
     expect(validatePromptInput('one :: 1\nbad line').message).toContain('Each non-empty');
     expect(validatePromptInput('a::1\nb::2\nc::3\nd::4').message).toContain('Add 1 more');
     const tooMany = Array.from({ length: 31 }, (_, i) => `q${i}::a${i}`).join('\n');
-    expect(validatePromptInput(tooMany).message).toContain('30');
+    expect(validatePromptInput(tooMany).message).toBe('Use 30 pairs or fewer.');
   });
 });
 
