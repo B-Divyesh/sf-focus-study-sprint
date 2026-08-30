@@ -92,6 +92,41 @@ caching, and `sw.js: no-cache` were present. A disposable v6→v7 worker test sh
 the update notice, reloaded exactly once after **Update app**, retained one main
 landmark, replaced v6 caches with v7 shell/runtime caches, and logged no errors.
 
+## Deployment and live identity
+
+Repair commit `b9c1a73` was pushed to `origin/main` and deployed with the work-order
+static deployer. Azure deployment `a9bac487-b90d-4f3f-9f42-ea354def0b73` succeeded
+on `sf-focus-study-sprint` in `eastus2`; the custom domain remained `Ready` and
+returned HTTPS 200.
+
+All 21 public files in `dist/` matched the live custom-domain response byte-for-byte
+by SHA-256, excluding only the deployment-only `staticwebapp.config.json`. This
+included root, demo, Privacy, Terms, 404, offline HTML/CSS, manifest, worker, robots,
+sitemap, all JS/CSS/images, and all icons. Root SHA-256:
+`0a04f396cd17b5a21937caa92bb9dde8db97fdeb324c5b750e7f900143e94bd7`.
+The unknown-route response body also matched `dist/404.html` exactly and returned 404.
+
+Live browser and policy evidence:
+
+- `/opt/fleet/lib/verify-url.sh`: HTTP 200 in 701 ms; correct title and `lang=en`;
+  one h1, one main landmark, no missing alt text, unlabeled buttons, or load errors.
+- At 390×844 and 1440×1000: one h1/main, no horizontal overflow, zero console/page/
+  request errors, zero serious/critical axe findings. Mobile CTA bottom: 472 px.
+- Live `/demo`: banner and sample prompt visible; the real-data sentinel remained
+  untouched; four `demo:fss:*` keys existed; typed/revealed study work made no
+  cross-origin request; offline reload retained the prompt and offline notice.
+- Live `/offline.html`: intended paper background and no CSP/console errors.
+- Live Privacy and Terms: HTTP 200, correct route title, one h1, no console errors.
+- Live unknown route: HTTP 404, “Page not found — Focus Study Sprint,” one h1.
+- Live security policy includes HSTS, CSP with response-header `frame-ancestors`,
+  Permissions-Policy, `nosniff`, and strict referrer policy. Hashed assets are
+  immutable for one year; `sw.js` is `no-cache`; the manifest has the correct MIME.
+- Live mobile Lighthouse: Performance 100, Accessibility 100, Best Practices 100,
+  SEO 100; FCP 0.9 s, LCP 1.2 s, TBT 10 ms, CLS 0, transfer 72 KiB.
+- Sociobot checkout returned 303 to its hosted Dodo session. Invalid verification
+  returned HTTP 200 with `valid:false`, `reason:"invalid"`, and the exact product
+  origin in `Access-Control-Allow-Origin`.
+
 ## Run and verify
 
 ```sh
@@ -105,5 +140,5 @@ the production route and response policy locally.
 
 ## Known gaps and next steps
 
-No product-code gap is known. Deployment and byte-identity/live response checks are
-the remaining work-order steps; their exact evidence will be appended after upload.
+No release-blocking or known product-code gap remains. Independent verification is
+the next factory step.
