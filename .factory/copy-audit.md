@@ -71,6 +71,9 @@ The headline is seven words. The next sentence names students and self-learners.
 sample-data action and its result appear together in the first 520 vertical pixels at
 390×844, so the first screen can be read aloud in one breath.
 
+The catalog line is “Practice recalling answers in short study sessions.” It starts
+with a verb, contains seven words, and is 51 characters long.
+
 ## Terminology
 
 | Concept | One term used |
