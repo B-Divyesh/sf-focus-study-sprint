@@ -12,7 +12,7 @@ as one word. Interface labels are listed separately from complete sentences.
 | Opens a five-prompt practice session. | 5 | Pass |
 | Works offline after your first visit. | 6 | Pass |
 | Study data stays in this browser. | 6 | Pass |
-| Core study and JSON backup are free. | 7 | Pass |
+| Study sessions and JSON backup are free. | 7 | Pass |
 | One prompt and answer per line, separated by `::` or a tab. | 11 | Pass |
 | Use 5–30 pairs. | 3 | Pass |
 | Nothing is uploaded. | 3 | Pass |
@@ -24,7 +24,7 @@ as one word. Interface labels are listed separately from complete sentences.
 | Review your recap. | 3 | Pass |
 | Export a JSON backup whenever you want one. | 9 | Pass |
 | Prompts, responses, ratings, and recaps remain in this browser. | 9 | Pass |
-| The app sends no behavioral analytics. | 6 | Pass |
+| The app does not send usage reports. | 7 | Pass |
 | The app does not teach content, check correctness, or promise learning results. | 12 | Pass |
 | Contour adds saved prompt sets and your latest 20 session records. | 11 | Pass |
 | Study sessions and JSON backup remain free. | 7 | Pass |

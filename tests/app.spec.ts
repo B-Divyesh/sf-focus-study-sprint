@@ -22,6 +22,28 @@ test('@claim:demo-isolation keeps sample work separate from real browser data', 
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByLabel(/One prompt and answer/)).toHaveValue(sentinel);
   expect(await page.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith('demo:fss:')))).toEqual([]);
+
+  await page.goto('/demo');
+  await page.getByRole('button', { name: /Reveal answer/ }).click();
+  await page.getByRole('button', { name: 'Recalled' }).click();
+  await expect(page.getByText('PROMPT 2 OF 5', { exact: true })).toBeVisible();
+  const storedDemoDatabase = await page.evaluate(async () => {
+    const databases = await indexedDB.databases();
+    return databases.find((database) => database.name === 'demo:focus-study-sprint')?.name ?? null;
+  });
+  expect(storedDemoDatabase).toBe('demo:focus-study-sprint');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Privacy' }).click();
+  await expect(page).toHaveURL(/\/privacy\/$/);
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Start', exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  expect(await page.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith('demo:fss:')))).toEqual([]);
+  const demoDatabase = await page.evaluate(async () => {
+    const databases = await indexedDB.databases();
+    return databases.find((database) => database.name === 'demo:focus-study-sprint')?.name ?? null;
+  });
+  expect(demoDatabase).toBeNull();
+  await page.goto('/demo');
+  await expect(page.getByText('PROMPT 1 OF 5')).toBeVisible();
 });
 
 test('@claim:input-limits enforces 5–30 prompt pairs and the three session lengths', async ({ page }) => {
@@ -48,6 +70,27 @@ test('@claim:local-privacy sends no study data or analytics from the demo flow',
   await page.getByRole('button', { name: /Recalled/ }).click();
   expect(requests.length).toBeGreaterThan(0);
   expect(requests.every((url) => new URL(url).origin === new URL(page.url()).origin)).toBe(true);
+});
+
+test('@claim:billing-destination sends license checks only to Sociobot billing and uses its checkout URL', async ({ page }) => {
+  const expectedVerification = 'https://api.sociobot.in/api/v1/products/focus-study-sprint/verify?license=recorded-license';
+  const crossOriginRequests: string[] = [];
+  await page.route(expectedVerification, (route) => route.fulfill({
+    contentType: 'application/json', body: JSON.stringify({ valid: true, reason: 'ok' })
+  }));
+
+  await page.goto('/library');
+  const productOrigin = new URL(page.url()).origin;
+  page.on('request', (request) => {
+    if (new URL(request.url()).origin !== productOrigin) crossOriginRequests.push(request.url());
+  });
+  const checkout = page.getByRole('link', { name: 'Buy Contour once for $12' });
+  await expect(checkout).toHaveAttribute('href', 'https://api.sociobot.in/api/v1/products/focus-study-sprint/checkout');
+  await page.getByRole('button', { name: 'Have a license? Restore it' }).click();
+  await page.getByLabel('License token').fill('recorded-license');
+  await page.getByRole('button', { name: 'Verify and restore' }).click();
+  await expect(page.getByText('Contour features restored on this device.')).toBeVisible();
+  expect(crossOriginRequests).toEqual([expectedVerification]);
 });
 
 test('@claim:study-flow completes a keyboard-first recall sprint and persists its recap', async ({ page }) => {
@@ -336,7 +379,7 @@ test('@claim:installable-shell publishes a standalone manifest and active servic
   });
   expect(installation.manifestHref).toBe('/manifest.webmanifest');
   expect(installation.manifest).toMatchObject({
-    name: 'Focus Study Sprint', short_name: 'Study Sprint', start_url: '/?v=9', display: 'standalone', scope: '/'
+    name: 'Focus Study Sprint', short_name: 'Study Sprint', start_url: '/?v=10', display: 'standalone', scope: '/'
   });
   expect(installation.manifest.icons).toEqual(expect.arrayContaining([
     expect.objectContaining({ src: '/icons/icon-192.png', sizes: '192x192' }),

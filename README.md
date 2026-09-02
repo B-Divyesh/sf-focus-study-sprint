@@ -10,13 +10,14 @@ Try the isolated sample session: <https://focus-study-sprint.sociobot.in/demo>
 
 ## What v1 includes
 
-- Five to 30 prompt pairs, 5/10/20-minute sessions, pause, and time/completion endings.
+- Five to 30 prompt pairs and 5/10/20-minute sessions.
+- Sessions can pause. They end when time runs out or after the last prompt.
 - Keyboard answer practice (`Enter` to reveal and `1` / `2` to self-rate) with a private recap.
 - Local session history plus JSON backup and restore.
-- An installable app shell that works offline after the first online visit.
+- Install the app and use it offline after your first online visit.
 - System, light, and dark themes with reduced motion and a tested 390px layout.
 - Optional $12 one-time Contour license: reusable saved prompt sets and the latest
-  20 on-device session records. Checkout and verification use only the Sociobot billing API.
+  20 on-device session records. Checkout and license checks use the Sociobot billing API.
 - Plain-language `/privacy/` and `/terms/` pages.
 
 The **Try it with sample data** action opens `/demo`. Demo data uses `demo:` storage
@@ -36,7 +37,7 @@ npm run dev
 ```
 
 Open the printed local URL. No environment variables or backend are required for the
-free experience. The payment link is public and contains no private key.
+free experience.
 
 ## Test and build
 
@@ -69,8 +70,8 @@ This check fails when purchase setup is missing. It never starts a payment.
 ## Data and privacy
 
 Prompts, responses, recaps, saved sets, display preference, and any license token are
-local to the browser. No analytics or advertising scripts ship. License verification
-contacts only the Sociobot billing API. Clearing site data can remove records; use
+local to the browser. No analytics or advertising scripts ship. License checks contact
+only the Sociobot billing API. Clearing site data can remove records; use
 Library → Export JSON for a portable backup.
 
 ## Deployment

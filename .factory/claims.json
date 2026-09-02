@@ -77,6 +77,13 @@
     "sandbox": "fresh landing page with a recorded valid-license response; save and reuse a five-prompt set, import 21 records, and assert exactly the latest 20 appear; live catalog is checked by test:live-contract"
   },
   {
+    "id": "billing-destination",
+    "claim": "Checkout uses Sociobot billing and license checks contact only the Sociobot billing API.",
+    "where": "README, Contour purchase controls",
+    "test": "npm run test:e2e -- --grep \"@claim:billing-destination\"",
+    "sandbox": "fresh unlicensed Library; inspect the checkout destination, restore a recorded license, and record every cross-origin request"
+  },
+  {
     "id": "session-timing",
     "claim": "A study session can be paused and ends with a recap when its selected time runs out.",
     "where": "README, session timer",

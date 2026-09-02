@@ -1,5 +1,6 @@
 import './style.css';
 import { createStorage } from './db';
+import { clearDemoWorkspace } from './demo';
 import { formatClock, isValidActiveSnapshot, isValidImport, recap, validatePromptInput } from './logic';
 import { cachedUnlock, captureLicenseFromUrl, CHECKOUT_URL, saveLicense, verifyLicense } from './license';
 import type { Prompt, Response as StudyResponse, SavedDeck, SessionRecord, Theme } from './types';
@@ -135,6 +136,13 @@ function routeFor(screen: Screen): string {
   return screen === 'setup' ? '/' : `/${screen}`;
 }
 
+function demoExitHref(path: string): string {
+  if (!DEMO_MODE) return path;
+  const url = new URL(path, location.origin);
+  url.searchParams.set('demo', 'exit');
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
 function screenFromLocation(): Screen {
   if (DEMO_MODE) {
     const requested = new URLSearchParams(location.search).get('screen') as Screen | null;
@@ -163,7 +171,7 @@ function shell(content: string): string {
         <a href="${routeFor('setup')}" class="nav-link ${state.screen === 'setup' ? 'active' : ''}" data-nav="setup">Start</a>
         <a href="${routeFor('library')}" class="nav-link ${state.screen === 'library' ? 'active' : ''}" data-nav="library">Library</a>
         <a href="/demo" class="nav-link ${DEMO_MODE ? 'active' : ''}">Demo</a>
-        <a href="/privacy/" class="nav-link">Privacy</a>
+        <a href="${demoExitHref('/privacy/')}" class="nav-link" ${DEMO_MODE ? 'data-demo-exit' : ''}>Privacy</a>
       </nav>
       <button class="icon-button theme-button" aria-label="Change color theme" title="Change color theme" data-theme-toggle>
         ${icon(state.theme === 'dark' ? 'moon' : state.theme === 'light' ? 'sun' : 'system')}
@@ -174,7 +182,7 @@ function shell(content: string): string {
     <main id="main" tabindex="-1">${content}</main>
     <footer>
       <p>Short answer-practice sessions for students and self-learners.</p>
-      <div><a href="${routeFor('about')}" data-nav="about">About</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Built by Param Factory</span><span>v1.1.2 · polish-2</span></div>
+      <div><a href="${routeFor('about')}" data-nav="about">About</a><a href="${demoExitHref('/privacy/')}" ${DEMO_MODE ? 'data-demo-exit' : ''}>Privacy</a><a href="${demoExitHref('/terms/')}" ${DEMO_MODE ? 'data-demo-exit' : ''}>Terms</a><span>Built by Param Factory</span><span>v1.1.3 · polish-3</span></div>
     </footer>
     <div class="sr-only" aria-live="polite" id="live-region"></div>
     ${state.updateReady ? '<div class="update-toast" role="status"><span>An app update is ready.</span><button data-update>Update app</button></div>' : ''}
@@ -194,7 +202,7 @@ function setupView(): string {
         <ul class="trust-list" aria-label="Product facts">
           <li>${icon('check')} Works offline after your first visit</li>
           <li>${icon('check')} Study data stays in this browser</li>
-          <li>${icon('check')} Core study and JSON backup are free</li>
+          <li>${icon('check')} Study sessions and JSON backup are free</li>
         </ul>
       </div>
       <picture class="hero-art">
@@ -225,12 +233,12 @@ function setupView(): string {
       <ol class="steps-list"><li><strong>Paste 5–30 pairs.</strong><span>Put one prompt and answer on each line.</span></li><li><strong>Recall each answer.</strong><span>Reveal it, then choose Recalled or Keep practicing.</span></li><li><strong>Review your recap.</strong><span>Export a JSON backup whenever you want one.</span></li></ol>
     </section>
     <section class="landing-section limits-section" aria-labelledby="limits-title">
-      <div><p class="coordinate">PRIVATE BY DEFAULT</p><h2 id="limits-title">Your study material stays local</h2><p>Prompts, responses, ratings, and recaps remain in this browser. The app sends no behavioral analytics.</p><a href="/privacy/">Read the privacy policy</a></div>
+      <div><p class="coordinate">PRIVATE BY DEFAULT</p><h2 id="limits-title">Your study material stays local</h2><p>Prompts, responses, ratings, and recaps remain in this browser. The app does not send usage reports.</p><a href="${demoExitHref('/privacy/')}" ${DEMO_MODE ? 'data-demo-exit' : ''}>Read the privacy policy</a></div>
       <div><p class="coordinate">WHAT THIS APP DOES NOT DO</p><h2>This app does not check answers</h2><p>The app does not teach content, check correctness, or promise learning results.</p></div>
     </section>
     <section class="landing-section price-section" aria-labelledby="price-title">
       <div><p class="coordinate">OPTIONAL ONE-TIME PURCHASE</p><h2 id="price-title">Keep reusable prompt sets for $12</h2><p>Contour adds saved prompt sets and your latest 20 session records. Study sessions and JSON backup remain free.</p></div>
-      <a class="secondary-action" href="${CHECKOUT_URL}">Buy Contour once for $12</a>
+      <a class="secondary-action" href="${CHECKOUT_URL}" ${DEMO_MODE ? 'data-demo-exit' : ''}>Buy Contour once for $12</a>
     </section>
   `);
 }
@@ -297,7 +305,7 @@ function libraryView(): string {
         <section aria-labelledby="decks-title">
           <div class="section-heading"><h2 id="decks-title">Reusable prompt sets</h2>${state.unlocked ? '<button class="text-button" data-save-draft>Save current draft</button>' : ''}</div>
           ${state.unlocked ? (state.decks.length ? `<ul class="deck-list">${state.decks.map((deck) => `<li><div><strong>${escapeHtml(deck.name)}</strong><span>${deck.prompts.length} prompts</span></div><div><button data-load-deck="${deck.id}">Use</button><button class="danger-button" data-delete-deck="${deck.id}" aria-label="Delete ${escapeHtml(deck.name)}">Delete</button></div></li>`).join('')}</ul>` : '<div class="empty-state"><span class="map-mark">×</span><h3>No saved sets yet</h3><p>Return to Start, paste a valid set, then save it here.</p></div>') : `
-            <div class="unlock-panel"><span class="map-mark">◇</span><h3>Reuse prompt sets</h3><p>The $12 one-time Contour license adds reusable prompt sets and your latest 20 on-device session records. Starting sessions and exporting data stay free.</p><a class="primary-action" href="${CHECKOUT_URL}">Buy Contour once for $12</a><button class="text-button" data-license-dialog>Have a license? Restore it</button><p class="merchant-note">Secure checkout by Sociobot / Dodo, merchant of record. No subscription.</p></div>
+            <div class="unlock-panel"><span class="map-mark">◇</span><h3>Reuse prompt sets</h3><p>The $12 one-time Contour license adds reusable prompt sets and your latest 20 on-device session records. Starting sessions and exporting data stay free.</p><a class="primary-action" href="${CHECKOUT_URL}">Buy Contour once for $12</a><button class="text-button" data-license-dialog>Have a license? Restore it</button><p class="merchant-note">Checkout is handled by Sociobot / Dodo, merchant of record. No subscription.</p></div>
           `}
         </section>
         <section aria-labelledby="history-title">
@@ -321,7 +329,7 @@ function aboutView(): string {
   return shell(`
     <section class="about-wrap" aria-labelledby="about-title">
       <p class="coordinate">PRODUCT SCOPE</p><h1 id="about-title" tabindex="-1">Practice without streaks or feeds</h1>
-      <p class="lede">Focus Study Sprint supports short answer-recall practice. It does not generate teaching material, judge mastery, or try to make you return.</p>
+      <p class="lede">Focus Study Sprint supports short answer practice. It does not generate teaching material, judge mastery, or try to make you return.</p>
       <div class="principles-grid"><article><span>01</span><h2>Bring your own material</h2><p>You choose the material. The app presents one prompt at a time.</p></article><article><span>02</span><h2>Finish on purpose</h2><p>A timer and finite prompt set give the session a clear end.</p></article><article><span>03</span><h2>Keep it private</h2><p>Prompts, answers, ratings, and saved sets stay in this browser.</p></article></div>
     </section>
   `);
@@ -453,8 +461,7 @@ async function importData(file: File): Promise<void> {
 
 async function resetDemo(): Promise<void> {
   if (!DEMO_MODE) return;
-  await storage.clearAll();
-  Object.keys(localStorage).filter((key) => key.startsWith('demo:fss:')).forEach((key) => localStorage.removeItem(key));
+  await clearDemoWorkspace();
   Object.assign(state, {
     screen: 'setup' as Screen,
     draft: SAMPLE,
@@ -481,14 +488,25 @@ async function resetDemo(): Promise<void> {
 }
 
 async function leaveDemo(): Promise<void> {
-  if (!DEMO_MODE) return;
-  await storage.clearAll();
-  Object.keys(localStorage).filter((key) => key.startsWith('demo:fss:')).forEach((key) => localStorage.removeItem(key));
-  location.assign('/');
+  await exitDemoTo('/');
+}
+
+async function exitDemoTo(destination: string): Promise<void> {
+  if (!DEMO_MODE) { location.assign(destination); return; }
+  try {
+    await clearDemoWorkspace();
+  } finally {
+    location.assign(destination);
+  }
 }
 
 function bindEvents(): void {
   document.querySelectorAll<HTMLElement>('[data-nav]').forEach((element) => element.addEventListener('click', (event) => { event.preventDefault(); navigate(element.dataset.nav as Screen); }));
+  document.querySelectorAll<HTMLAnchorElement>('[data-demo-exit]').forEach((link) => link.addEventListener('click', (event) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    void exitDemoTo(link.href);
+  }));
   document.querySelector<HTMLButtonElement>('[data-theme-toggle]')?.addEventListener('click', (event) => {
     const next: Theme = state.theme === 'system' ? 'light' : state.theme === 'light' ? 'dark' : 'system';
     setTheme(next);
