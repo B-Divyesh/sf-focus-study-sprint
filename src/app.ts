@@ -164,7 +164,7 @@ function shell(content: string): string {
     <main id="main" tabindex="-1">${content}</main>
     <footer>
       <p>Short answer-practice sessions for students and self-learners.</p>
-      <div><a href="${routeFor('about')}" ${DEMO_MODE ? 'data-nav="about"' : ''}>About</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Built by Param Factory</span><span>v1.1.0 · polish-1</span></div>
+      <div><a href="${routeFor('about')}" data-nav="about">About</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Built by Param Factory</span><span>v1.1.0 · polish-1</span></div>
     </footer>
     <div class="sr-only" aria-live="polite" id="live-region"></div>
     ${state.updateReady ? '<div class="update-toast" role="status"><span>An app update is ready.</span><button data-update>Update app</button></div>' : ''}
