@@ -1,26 +1,53 @@
-# Review 1 handoff — Focus Study Sprint
+# Polish 1 handoff — Focus Study Sprint
 
-## Result
+## Delivered
 
-**FAIL** under the zero-findings review standard. No product code was modified.
+Polished and deployed the released candidate from the first adversarial review. The
+product keeps its topographic field-notebook identity while now has one shared
+navigation/footer system, a complete sitemap, plain first-screen wording, consistent
+study-session terminology, a descriptive limits section, and no untested footer
+provenance promise.
 
-`.factory/review-1.md` records seven findings:
+The one-click `/demo` sandbox remains isolated in `demo:focus-study-sprint` IndexedDB
+and `demo:fss:*` localStorage. It retains its persistent banner, Reset demo, and Start
+for real controls. PWA app-shell cache and manifest start URL are versioned as v7.
 
-- F-1-1 inconsistent app/legal/404 navigation and footer
-- F-1-2 public routes absent from `sitemap.xml`
-- F-1-3 unexplained `active-recall` headline jargon
-- F-1-4 mixed `study session` / `study sprint` terminology
-- F-1-5 a non-descriptive limits heading
-- F-1-6 an unregistered public provenance claim
-- F-1-7 three README sentences over the 22-word cap
+## Revision and deployment
 
-## Verification run
+- Application revision deployed: `4f43c97839f1e7e6cf7065399c238e6464dffd50`
+- Production URL: <https://focus-study-sprint.sociobot.in>
+- Static deployment: Azure Static Web App `sf-focus-study-sprint`, production environment
+- Finding-by-finding closure: [`.factory/polish-1.md`](polish-1.md)
 
-- Opened the live URL cold at 390×844 and 1440×1000 before interaction.
-- Exercised the live one-click demo, Reset demo, Start for real, storage isolation, and same-origin request logging.
-- Ran every registered claim command, then `npm test`, `npm run build`, and `npm run test:live-contract`; all passed.
-- Checked live route titles/metadata, links, 404, sitemap, privacy/security headers, focus/history, offline coverage, and prior verification history.
+## Verification
 
-## Next step
+- Clean clone `/tmp/focus-study-sprint-final.Ux0GJ9` at the deployed revision: `npm ci`,
+  `npm test` — 18 unit and 24 browser tests passed — then `npm run build`; `dist/index.html`
+  exists.
+- Every one of the 11 commands in `.factory/claims.json` was separately executed from a
+  clean clone. The final clean clone also executes each tagged claim in the full suite.
+- Final workspace commands passed: `npm test`, `npm run build`, and `npm run test:live-contract`.
+- Live cold checks passed for `/`, `/demo`, `/library`, `/about`, `/privacy/`, and `/terms/`:
+  200 status, route-specific title, one h1, one main, and no console/page errors.
+- Live `/not-a-route` returns the designed page with status 404. The browser’s failed-resource
+  message is the expected consequence of that intentional HTTP 404.
+- Live axe checks on root, demo, privacy, and terms: no serious or critical findings.
+- Live Lighthouse mobile: Performance 100, Accessibility 100, Best Practices 100, SEO 100.
+  Report: `/tmp/focus-study-sprint-lighthouse.json`.
+- Evidence screenshots: `/tmp/focus-study-sprint-live-mobile.png` and
+  `/tmp/focus-study-sprint-live-demo-mobile.png`.
 
-Implement the seven concrete fixes in `review-1.md`, then repeat the full adversarial checklist from a fresh browser context and clean install.
+## Run and deploy
+
+```sh
+npm ci
+npm test
+npm run build
+npm run test:live-contract
+```
+
+Deploy the contents of `dist/` through the scoped Static Web App configuration.
+
+## Known gaps
+
+None. No review finding remains open.
