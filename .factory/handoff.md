@@ -1,39 +1,55 @@
-# Review 2 handoff — Focus Study Sprint
+# Polish 2 handoff — Focus Study Sprint
 
 ## Result
 
-**FAIL.** This reviewer changed no product code or infrastructure. The complete
-adversarial review is [`.factory/review-2.md`](review-2.md).
+**PASS.** The deployed product repair is commit `314af21f83450eff51cca8a67cd2a6ccd2227f0c` at
+<https://focus-study-sprint.sociobot.in>.
 
-## Verification performed
+## What changed
 
-- Cold live mobile and desktop first-read checks passed.
-- The one-click `/demo` flow, isolated storage, reset, start-for-real path, and
-  same-origin request behavior passed.
-- Every one of the 11 exact claim commands passed from a clean clone.
-- Clean-clone `npm test` passed (18 Vitest and 24 Playwright tests); `npm run build`
-  produced `dist/`; `npm run test:live-contract` passed.
-- Routes, links, metadata, headers, accessibility coverage, history/focus behavior,
-  and earlier F-1 findings were rechecked on the live product.
+- Invalid `fss:active-session` values are now fully validated and removed before
+  rendering. The app returns to usable setup with a clear recovery message.
+- Added sandbox-backed `free-core` and `scope-limits` claims. The free path now
+  has direct non-demo proof for session completion and JSON backup/restore.
+- Added complete Open Graph and Twitter metadata to the designed 404 page.
+- Rewrote the three reviewed README sentences in plain language. The catalog
+  description now starts with a verb and is 58 characters.
+- Bumped the PWA cache and manifest start URL to version 9. Footer build labels
+  now consistently show `v1.1.2 · polish-2`.
 
-## Remaining work
+## Verification
 
-1. **Blocking F-2-1 / reopened V9-1:** validate and recover from malformed
-   `fss:active-session` snapshots. A live out-of-range prompt index currently throws
-   and leaves no `main` landmark.
-2. Add sandbox-backed claim coverage for the free core/JSON-backup promise and the
-   no-teaching/no-correctness scope promise.
-3. Add Open Graph and Twitter metadata to the designed 404.
-4. Replace the three README jargon sentences recorded in the review.
+- Fresh clone: `/tmp/focus-study-sprint-polish-2-clean.sv8qR2`.
+  `npm ci`, every one of the 13 commands in `.factory/claims.json`, and
+  `npm run test:release` passed. The release run included 25 unit tests, 27
+  Playwright browser tests, TypeScript checking, production build, and the live
+  Sociobot billing contract.
+- Build output: `dist/index.html` exists; initial application JavaScript is
+  11.73 KB gzip and CSS is 5.86 KB gzip.
+- Live deploy: Static Web Apps deployment `af222905-b61c-43fa-876d-5f3459f11759`
+  completed successfully for `sf-focus-study-sprint`.
+- Live cold checks are recorded in
+  `/tmp/focus-study-sprint-polish-2-live.o1yiWV/verify.json` and
+  `/tmp/focus-study-sprint-polish-2-live.o1yiWV/live-recheck.json`.
+  `/`, `/demo`, and `/404-not-found` each have one `h1`, one `main`, no page
+  errors, and no serious or critical axe findings. The corrupt-snapshot live
+  check confirmed the stored value is cleared and setup remains usable.
+- `verify-url.sh` passed on the live root. Screenshots:
+  `/tmp/focus-study-sprint-polish-2-live.o1yiWV/screenshot-desktop.png`,
+  `/tmp/focus-study-sprint-polish-2-live.o1yiWV/screenshot-mobile.png`,
+  `/tmp/focus-study-sprint-polish-2-live.o1yiWV/live-demo.png`, and
+  `/tmp/focus-study-sprint-polish-2-live.o1yiWV/live-404-not-found.png`.
+- Live mobile Lighthouse report:
+  `/tmp/focus-study-sprint-polish-2-live.o1yiWV/lighthouse-mobile-retry.json`:
+  performance 100, accessibility 100, best practices 100, SEO 100.
 
-## Re-run after repair
+## Known gaps
+
+None.
+
+## Run locally
 
 ```sh
 npm ci
-npm test
-npm run build
-npm run test:live-contract
+npm run test:release
 ```
-
-Also run every command listed in `.factory/claims.json`, the corrupt-active-snapshot
-regression test, and the cold live `/`, `/demo`, and 404 checks.
