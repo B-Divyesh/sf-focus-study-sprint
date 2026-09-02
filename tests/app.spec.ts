@@ -590,7 +590,8 @@ test('keeps setup and recovery controls usable at 200% text size on mobile', asy
   await page.goto('/');
   await page.waitForFunction(async () => Boolean((await navigator.serviceWorker.ready).active && navigator.serviceWorker.controller));
   await page.waitForSelector('main');
-  await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+  await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+  await expect(page.locator('html')).toHaveCSS('font-size', '32px');
 
   const expectNoHorizontalOverflow = async () => {
     const widths = await page.evaluate(() => ({
