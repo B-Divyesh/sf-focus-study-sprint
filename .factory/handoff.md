@@ -1,55 +1,44 @@
-# Polish 2 handoff — Focus Study Sprint
+# Verification 10 handoff — Focus Study Sprint
 
 ## Result
 
-**PASS.** The deployed product repair is commit `314af21f83450eff51cca8a67cd2a6ccd2227f0c` at
-<https://focus-study-sprint.sociobot.in>.
+**PASS.** Candidate `7bd0f882ab62eafe10787eb0becc5bba6c943de9` is live at
+<https://focus-study-sprint.sociobot.in>. Independent verification found that live
+production is byte-identical to the candidate build (21 files compared, 0 mismatches).
 
-## What changed
+## What was verified
 
-- Invalid `fss:active-session` values are now fully validated and removed before
-  rendering. The app returns to usable setup with a clear recovery message.
-- Added sandbox-backed `free-core` and `scope-limits` claims. The free path now
-  has direct non-demo proof for session completion and JSON backup/restore.
-- Added complete Open Graph and Twitter metadata to the designed 404 page.
-- Rewrote the three reviewed README sentences in plain language. The catalog
-  description now starts with a verb and is 58 characters.
-- Bumped the PWA cache and manifest start URL to version 9. Footer build labels
-  now consistently show `v1.1.2 · polish-2`.
+- All 13 required `.factory/claims.json` commands passed individually from the demo
+  entry point after clean `npm ci`.
+- `npm test` (25 unit + 27 browser tests), `npm run lint`, `npm run build`, and
+  `npm run test:live-contract` passed. `dist/` was produced.
+- Live cold first-read copy answers what it does, for whom, and what to click first.
+  The one-click sample demo is isolated, keyboard-completable, private, and offline
+  after first load.
+- Live normal, boundary, malformed-input recovery, 390px, desktop, keyboard,
+  reduced-motion, axe, console-error, headers, caching, bundle, billing rate-limit,
+  404, and internal-link checks passed.
+- PWA service-worker activation, offline reload, and an independently simulated
+  v9→v10 update with the in-app update control passed.
+- Live mobile Lighthouse: Performance 94, Accessibility 100, Best Practices 100,
+  SEO 100; LCP 1.3 s; CLS 0; transfer 54 KiB.
 
-## Verification
+## Privacy and known gaps
 
-- Fresh clone: `/tmp/focus-study-sprint-polish-2-clean.sv8qR2`.
-  `npm ci`, every one of the 13 commands in `.factory/claims.json`, and
-  `npm run test:release` passed. The release run included 25 unit tests, 27
-  Playwright browser tests, TypeScript checking, production build, and the live
-  Sociobot billing contract.
-- Build output: `dist/index.html` exists; initial application JavaScript is
-  11.73 KB gzip and CSS is 5.86 KB gzip.
-- Live deploy: Static Web Apps deployment `af222905-b61c-43fa-876d-5f3459f11759`
-  completed successfully for `sf-focus-study-sprint`.
-- Live cold checks are recorded in
-  `/tmp/focus-study-sprint-polish-2-live.o1yiWV/verify.json` and
-  `/tmp/focus-study-sprint-polish-2-live.o1yiWV/live-recheck.json`.
-  `/`, `/demo`, and `/404-not-found` each have one `h1`, one `main`, no page
-  errors, and no serious or critical axe findings. The corrupt-snapshot live
-  check confirmed the stored value is cleared and setup remains usable.
-- `verify-url.sh` passed on the live root. Screenshots:
-  `/tmp/focus-study-sprint-polish-2-live.o1yiWV/screenshot-desktop.png`,
-  `/tmp/focus-study-sprint-polish-2-live.o1yiWV/screenshot-mobile.png`,
-  `/tmp/focus-study-sprint-polish-2-live.o1yiWV/live-demo.png`, and
-  `/tmp/focus-study-sprint-polish-2-live.o1yiWV/live-404-not-found.png`.
-- Live mobile Lighthouse report:
-  `/tmp/focus-study-sprint-polish-2-live.o1yiWV/lighthouse-mobile-retry.json`:
-  performance 100, accessibility 100, best practices 100, SEO 100.
+The demo study flow sent no cross-origin requests. The product uses no analytics or
+third-party fonts/scripts. License verification is the only optional external call;
+it rate-limits after 30 requests, returning 429 with `Retry-After: 4` on request 31.
 
-## Known gaps
+Known gaps: none. No product code was changed during verification.
 
-None.
-
-## Run locally
+## How to run/verify
 
 ```sh
 npm ci
-npm run test:release
+npm test
+npm run lint
+npm run build
+npm run test:live-contract
 ```
+
+Read the complete evidence in `.factory/verification-10.md`.
