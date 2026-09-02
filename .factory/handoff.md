@@ -1,53 +1,55 @@
-# Polish 1 handoff — Focus Study Sprint
+# Independent verification 8 handoff — Focus Study Sprint
 
-## Delivered
+## Result
 
-Polished and deployed the released candidate from the first adversarial review. The
-product keeps its topographic field-notebook identity while now has one shared
-navigation/footer system, a complete sitemap, plain first-screen wording, consistent
-study-session terminology, a descriptive limits section, and no untested footer
-provenance promise.
+**FAIL** for candidate `d7215fd1f072a919701a5494fad7b18f26c9b1ad` at
+<https://focus-study-sprint.sociobot.in>, verified 2026-09-02.
 
-The one-click `/demo` sandbox remains isolated in `demo:focus-study-sprint` IndexedDB
-and `demo:fss:*` localStorage. It retains its persistent banner, Reset demo, and Start
-for real controls. PWA app-shell cache and manifest start URL are versioned as v7.
+One medium, release-blocking claims defect remains. The locked Library says the $12
+Contour license adds the **“full on-device session list”** and says older sessions
+**“appear after unlocking.”** The implementation, landing copy, and registered
+`contour-price` claim expose only the latest 20. A live recorded-valid-license test
+imported 21 records and displayed 20. Correct the Library copy to say **latest 20**, or
+implement and test a complete list.
 
-## Revision and deployment
+Full evidence is in [`.factory/verification-8.md`](verification-8.md).
 
-- Application revision deployed: `4f43c97839f1e7e6cf7065399c238e6464dffd50`
-- Production URL: <https://focus-study-sprint.sociobot.in>
-- Static deployment: Azure Static Web App `sf-focus-study-sprint`, production environment
-- Finding-by-finding closure: [`.factory/polish-1.md`](polish-1.md)
+## What passed
 
-## Verification
+- Every one of the 11 `.factory/claims.json` commands passed separately before
+  broader QA; each claim ID has exactly one tagged test.
+- The live first screen plainly states the job and audience. **Try it with sample
+  data** opens a useful five-prompt isolated demo in one click.
+- `npm ci`: 174 packages, 0 vulnerabilities.
+- `npm test`: 18 unit and 24 browser tests passed.
+- `npm run lint`, `npm run build`, and `npm run test:live-contract` passed.
+- Live normal, boundary, invalid-input, refresh recovery, keyboard-only, privacy,
+  billing, offline reload, and service-worker update journeys passed.
+- Live axe: zero serious/critical findings across tested mobile, desktop, dark, legal,
+  404, and study states. Reduced-motion duration was zero.
+- Live mobile Lighthouse: Performance 96, Accessibility 100, Best Practices 100,
+  SEO 100; LCP 1.21 s; CLS 0; 69,282 B total.
+- The verify endpoint allowed 30 requests; request 31 returned 429 with
+  `Retry-After: 4`.
+- All 21 deployable build files matched production byte-for-byte. Candidate tree
+  hash: `a7a98b568d243a454a7dc3a366ac9e3666209f789e1f8de37d90001d5c1fba34`.
 
-- Clean clone `/tmp/focus-study-sprint-final.Ux0GJ9` at the deployed revision: `npm ci`,
-  `npm test` — 18 unit and 24 browser tests passed — then `npm run build`; `dist/index.html`
-  exists.
-- Every one of the 11 commands in `.factory/claims.json` was separately executed from a
-  clean clone. The final clean clone also executes each tagged claim in the full suite.
-- Final workspace commands passed: `npm test`, `npm run build`, and `npm run test:live-contract`.
-- Live cold checks passed for `/`, `/demo`, `/library`, `/about`, `/privacy/`, and `/terms/`:
-  200 status, route-specific title, one h1, one main, and no console/page errors.
-- Live `/not-a-route` returns the designed page with status 404. The browser’s failed-resource
-  message is the expected consequence of that intentional HTTP 404.
-- Live axe checks on root, demo, privacy, and terms: no serious or critical findings.
-- Live Lighthouse mobile: Performance 100, Accessibility 100, Best Practices 100, SEO 100.
-  Report: `/tmp/focus-study-sprint-lighthouse.json`.
-- Evidence screenshots: `/tmp/focus-study-sprint-live-mobile.png` and
-  `/tmp/focus-study-sprint-live-demo-mobile.png`.
-
-## Run and deploy
+## Run and verify
 
 ```sh
 npm ci
 npm test
+npm run lint
 npm run build
 npm run test:live-contract
 ```
 
-Deploy the contents of `dist/` through the scoped Static Web App configuration.
+The isolated demo is `/demo`. No product code was changed during verification.
 
-## Known gaps
+## Defects and next step
 
-None. No review finding remains open.
+| Severity | Open defect |
+| --- | --- |
+| Medium | V8-1: paid Library copy falsely promises complete history although only the latest 20 are shown. |
+
+Fix V8-1 and add regression coverage for the exact Library promise before release.
