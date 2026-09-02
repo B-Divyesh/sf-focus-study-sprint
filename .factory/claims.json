@@ -43,7 +43,7 @@
   },
   {
     "id": "free-core",
-    "claim": "Core study sessions and JSON backup are free without a license.",
+    "claim": "Study sessions and JSON backup are free without a license.",
     "where": "landing hero fact, price section, Library, README",
     "test": "npm run test:e2e -- --grep \"@claim:free-core\"",
     "sandbox": "fresh non-demo, unlicensed browser context; complete five prompts, export JSON, clear local data, and restore the download without a license request"

@@ -2,48 +2,75 @@
 
 ## Result
 
-**FAIL.** Review 3 found one blocking demo-exit defect, two unregistered claims,
-and four plain-language issues. No product code or infrastructure was changed.
-The full report is in `.factory/review-3.md`.
+**PASS.** All findings from review 1, review 2, and review 3 are closed. The
+deployed repair is commit `4d5bcdfb472957f4507f4db44ede99a305947f24` at
+<https://focus-study-sprint.sociobot.in>.
 
-## What was done
+## What changed
 
-- Opened live production cold at 390×844 and 1440×1000 before scrolling.
-- Exercised the one-click demo, Reset demo, Start for real, storage isolation,
-  request logging, and the alternate Demo → Privacy → Start exit.
-- Ran all 13 commands in `.factory/claims.json` individually from a fresh clone.
-- Re-ran the full unit/browser suite, type check, production build, and live billing
-  contract check.
-- Crawled public routes and links; checked metadata, 404, history/back focus,
-  headers, mobile fit, and live axe results.
-- Read and verified every finding from review 1, review 2, polish 1, polish 2, and
-  the prior handoff.
-- Audited every landing and README sentence, heading, and action.
+- Demo exits now delete `demo:fss:*` keys and the entire
+  `demo:focus-study-sprint` IndexedDB database before navigation. Privacy and Terms
+  links use the same exit path, with a legal-page fallback for an exit link opened
+  outside the app shell.
+- Added the `billing-destination` claim and recorded-request browser proof. Removed
+  the untestable public-key sentence.
+- Rewrote the review-3 wording issues in the landing page, README, privacy policy,
+  and purchase copy. The catalog description is verb-first and 49 characters.
+- Bumped the PWA shell to `fss-v10` / manifest `?v=10` so installed clients receive
+  the changed shell.
 
-## Verification results
+## How to run and verify
 
-```text
-13/13 listed claim commands                 PASS
-npm test                                   PASS — 25 unit, 27 browser
-npm run lint                               PASS
-npm run build                              PASS — dist/ produced
-npm run test:live-contract                 PASS
-live axe, six public routes                PASS — zero violations
-live demo same-origin request check        PASS
-demo exit through Privacy, then Start      FAIL — demo data persists
+```sh
+npm ci
+npm run dev
+npm test
+npm run build
+npm run test:release
 ```
 
-Fresh clone: `/tmp/focus-study-sprint-review-3-clean.RdF5JG`.
+The isolated demo is `/demo` or `/?demo=1`. Its Reset demo and Start for real
+controls are persistent. See `.factory/demo.md` for sample contents and storage
+namespaces.
 
-## Required next work
+## Exact verification evidence
 
-1. Clear both demo storage namespaces on every demo-origin exit, including legal
-   links, and add the regression described in F-3-1.
-2. Register and test, or remove, the billing-destination and no-private-key claims.
-3. Apply the four concrete copy rewrites in F-3-4 through F-3-7.
-4. Re-run the complete review from scratch; do not accept a diff-only check.
+- Clean clone: `/tmp/focus-study-sprint-polish-3-clean.fkV5HY`, cloned with
+  `git clone --no-local`, then `npm ci`.
+- Every one of the 14 commands listed in `.factory/claims.json` was run separately
+  in that clone and passed: demo isolation, limits, keyboard study flow, offline
+  reload, local privacy, JSON backup, free core, scope limits, responsive layout,
+  display preferences, Contour price, billing destination, timing, and installability.
+- The clean clone then passed `npm run test:release`: 25 Vitest tests, 28 Playwright
+  tests, type check, production build, and live billing-contract verification.
+- Final local build: `npm run build` passed and wrote `dist/index.html`. Initial app
+  JavaScript is 35.24 kB raw / 11.55 kB gzip; CSS is 24.66 kB raw / 5.86 kB gzip.
+- Live factory verification: `/opt/fleet/lib/verify-url.sh
+  https://focus-study-sprint.sociobot.in /tmp/focus-study-sprint-polish-3-live.kRNGvh`
+  passed (HTTP 200, 776 ms cold navigation, title/lang/one h1/main/alt checks, no
+  console errors). Screenshots: `/tmp/focus-study-sprint-polish-3-live.kRNGvh/screenshot-desktop.png`,
+  `/tmp/focus-study-sprint-polish-3-live.kRNGvh/screenshot-mobile.png`,
+  `/tmp/focus-study-sprint-polish-3-live.kRNGvh/live-root-mobile.png`, and
+  `/tmp/focus-study-sprint-polish-3-live.kRNGvh/live-demo-mobile.png`.
+- Live cold recheck: `/tmp/focus-study-sprint-polish-3-live.kRNGvh/live-recheck.json`.
+  It confirms direct demo entry, real-data preservation, demo database deletion on
+  Demo → Privacy → Start, a fresh prompt 1 on re-entry, 200s and one h1/main for
+  every public route, the designed 404 status, route-specific titles, and no live
+  Axe serious/critical findings. The 404 has only Chromium’s expected failed 404
+  navigation-resource console entry.
+- Live mobile Lighthouse: performance 100, accessibility 100, best practices 100,
+  SEO 100. Report: `/tmp/focus-study-sprint-polish-3-live.kRNGvh/lighthouse-mobile.json`.
+- `npm run test:live-contract` passed after deployment: the $12 catalog entry and
+  hosted Sociobot checkout redirect are available.
 
-## Scope
+## Deployment
 
-Only `.factory/review-3.md` and `.factory/handoff.md` were changed. No deployment,
-resource, DNS, billing, secret, or product-code operation was performed.
+Built `dist/` was deployed with `/opt/fleet/lib/deploy-static.sh focus-study-sprint
+/work/repo/dist`. Azure deployment `be06ef76-558f-434a-8e04-62165f1b83e7` succeeded,
+the existing `sf-focus-study-sprint` app remained in `eastus2`, and the custom domain
+returned HTTPS 200 after deployment.
+
+## Known gaps and next steps
+
+None. The product remains a local-first offline PWA with no generated lessons, as
+required by the brief.
