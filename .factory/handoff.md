@@ -1,35 +1,84 @@
-# Review 4 handoff — Focus Study Sprint
+# Polish 4 handoff — Focus Study Sprint
 
 ## Result
 
-**FAIL.** Adversarial review 4 was completed against live production and repository
-revision `e2c397097f9f5396ae987b418c51a92a1aa999dd`. No product code, deployment,
-DNS, billing, secrets, or infrastructure was changed.
+**PASS.** Repair commit `865d097fd552a4ceb525d1667839633a2c0195a9` closes every
+finding in reviews 1–4, including F-4-1 through F-4-8. It is deployed to
+<https://focus-study-sprint.sociobot.in> as Static Web Apps deployment
+`2da979f3-f1b7-43ff-bc20-293b176e9c4b`.
 
-The full report is `.factory/review-4.md`. It records eight findings: four medium
-claim/privacy coverage issues and four low copy issues. No blocking failure was
-reproduced.
+The product remains a Vite + TypeScript offline PWA. Its one-click demo is
+available at <https://focus-study-sprint.sociobot.in/demo> and uses only the
+`demo:fss:*` localStorage namespace plus the `demo:focus-study-sprint`
+IndexedDB database.
 
-## Verification performed
+## What changed
 
-- Opened the live site cold in fresh 390×844 and 1440×900 browser contexts.
-- Exercised the one-click demo, realistic sample, reset, Start for real, legal-page
-  exit, isolated localStorage/IndexedDB namespaces, real-data sentinel, and offline
-  reload.
-- Ran all 14 commands from `.factory/claims.json` separately in clean clone
-  `/tmp/focus-study-sprint-review-4-clean.HoqK2w`; every command exited successfully.
-- Ran `npm test` (25 unit and 28 Playwright tests), `npm run lint`, `npm run build`,
-  `npm run test:live-contract`, and `git diff --check` in that clone; all passed.
-- Crawled live routes and assets, verified history/focus, headers, metadata, 404,
-  and consistent navigation/footer. Live Axe scans reported zero violations.
-- `/opt/fleet/lib/verify-url.sh` passed. Mobile Lighthouse scored 100 in all four
-  categories, with 1.2 s LCP, zero CLS, and zero total blocking time.
-- Rechecked every finding from reviews 1–3 against live production and current code.
-  All earlier findings remain fixed.
+- The input-limit claim now proves both boundaries, the exact three durations,
+  and a real 30-prompt session.
+- The display claim now runs serious/critical Axe checks in explicit light and
+  dark modes, with reduced motion enabled.
+- License copy now says that the browser stores the token and that verification
+  sends only that token to the Sociobot billing API. The Privacy page says the
+  same thing.
+- The scope claim and regression now cover the promised absence of streaks,
+  feeds, rewards, and return nudges in every app state and storage namespace.
+- The README removes the unprovable payment-side-effect sentence and subjective
+  opening adjective. The catalog line is now `Practice answers in short study
+  sessions.`
+- Saved prompt-set actions now say `Load this prompt set` and include the set
+  name for assistive technology. The empty session history names the next step
+  and provides `Start a study session`.
+- The PWA cache and start URL advance to v11 so installed clients receive the
+  repaired shell.
 
-## Required next steps
+## Verification
 
-Resolve F-4-1 through F-4-8 in `.factory/review-4.md`, then repeat the complete
-claim, copy, demo, route, accessibility, and build review. The most important work
-is aligning the input-limit and light/dark contrast tests with their full published
-claims, and clarifying how license tokens leave the browser for verification.
+Clean clone: `/tmp/focus-study-sprint-polish-4-clean.xOCULJ` at repair commit
+`865d097fd552a4ceb525d1667839633a2c0195a9`.
+
+- `npm ci` passed with zero reported vulnerabilities.
+- Every one of the 14 exact commands in `.factory/claims.json` passed separately.
+- `npm run test:release` passed: 25 unit tests, 28 Playwright browser tests,
+  TypeScript lint, production build, and live billing-contract check.
+- Build output has `dist/index.html`; app JavaScript is 35.34 kB raw / 11.56 kB
+  gzip, well below the 200 kB budget.
+- `git diff --check` passed before commit.
+
+Live evidence: `/tmp/focus-study-sprint-polish-4-live.jfgN7K`.
+
+- `verify-url.sh https://focus-study-sprint.sociobot.in` passed cold with no
+  console/page errors, one h1, one main, `lang="en"`, title, and image alt text.
+  Screenshots: `screenshot-desktop.png`, `screenshot-mobile.png`.
+- Live route sweep passed for `/`, `/demo`, `/library`, `/about`, `/privacy/`,
+  and `/terms/` (HTTP 200); `/not-a-route` returned the designed HTTP 404. Each
+  has a route title, one h1, one main, description, canonical, Open Graph, and
+  Twitter metadata.
+- Playwright Axe checks found zero serious/critical findings on explicit light
+  and dark themes. The standalone Axe CLI could not locate a system Chrome in
+  this worker; the equivalent Playwright Axe integration is the accepted
+  fallback and passed live plus across all local app/legal states.
+- Live 30-pair proof: `live-demo-30-prompts.png`; saved-set action proof:
+  `live-demo-library.png`; empty-history proof: `live-library-empty.png`.
+- Live Lighthouse mobile retry: Performance 100, Accessibility 100, Best
+  Practices 100, SEO 100; LCP 1209 ms, CLS 0, total blocking time 0 ms.
+- Live scope recheck found no streak/feed/reward/return-nudge markers, matching
+  text, or related storage keys in setup, session, recap, Library, or About.
+- Live license recheck restored a recorded fixture and observed exactly
+  `https://api.sociobot.in/api/v1/products/focus-study-sprint/verify?license=live-recorded-license`;
+  its only query key was `license`.
+
+## Run and deploy
+
+```sh
+npm ci
+npm run test:release
+npm run build
+```
+
+Deploy `dist/` through the factory static deployment workflow. Do not configure
+DNS, billing, or infrastructure from this repository.
+
+## Known gaps
+
+None.
