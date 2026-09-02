@@ -264,7 +264,7 @@ test('@claim:installable-shell publishes a standalone manifest and active servic
   });
   expect(installation.manifestHref).toBe('/manifest.webmanifest');
   expect(installation.manifest).toMatchObject({
-    name: 'Focus Study Sprint', short_name: 'Study Sprint', start_url: '/?v=6', display: 'standalone', scope: '/'
+    name: 'Focus Study Sprint', short_name: 'Study Sprint', start_url: '/?v=7', display: 'standalone', scope: '/'
   });
   expect(installation.manifest.icons).toEqual(expect.arrayContaining([
     expect.objectContaining({ src: '/icons/icon-192.png', sizes: '192x192' }),
