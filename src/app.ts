@@ -182,7 +182,7 @@ function shell(content: string): string {
     <main id="main" tabindex="-1">${content}</main>
     <footer>
       <p>Short answer-practice sessions for students and self-learners.</p>
-      <div><a href="${routeFor('about')}" data-nav="about">About</a><a href="${demoExitHref('/privacy/')}" ${DEMO_MODE ? 'data-demo-exit' : ''}>Privacy</a><a href="${demoExitHref('/terms/')}" ${DEMO_MODE ? 'data-demo-exit' : ''}>Terms</a><span>Built by Param Factory</span><span>v1.1.4 · polish-4</span></div>
+      <div><a href="${routeFor('about')}" data-nav="about">About</a><a href="${demoExitHref('/privacy/')}" ${DEMO_MODE ? 'data-demo-exit' : ''}>Privacy</a><a href="${demoExitHref('/terms/')}" ${DEMO_MODE ? 'data-demo-exit' : ''}>Terms</a><span>Built by Param Factory</span><span>v1.1.5 · polish-5</span></div>
     </footer>
     <div class="sr-only" aria-live="polite" id="live-region"></div>
     ${state.updateReady ? '<div class="update-toast" role="status"><span>An app update is ready.</span><button data-update>Update app</button></div>' : ''}

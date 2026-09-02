@@ -18,3 +18,5 @@ banner remains visible on every demo screen.
 - Normal data continues to use `fss:*` keys and the `focus-study-sprint` database.
 
 The demo needs no account, license, environment variable, or external API.
+The `demo-isolation`, `local-privacy`, and `no-advertising-scripts` claim tests enter
+the same public demo path from fresh browser contexts.

@@ -71,8 +71,8 @@ This check fails when purchase setup is missing.
 
 The browser stores prompts, responses, recaps, saved sets, display preference, and
 your license token. A license check sends only the token to the Sociobot billing API.
-No analytics or advertising scripts ship. Clearing site data can remove records; use
-Library → Export JSON for a portable backup.
+No analytics, advertising trackers, or third-party fonts and scripts ship. Clearing
+site data can remove records; use Library → Export JSON for a portable backup.
 
 ## Deployment
 

@@ -35,10 +35,10 @@ describe('static deployment policy', () => {
   });
 
   it('ships a versioned app shell for service-worker update activation', () => {
-    expect(readFileSync('public/sw.js', 'utf8')).toContain("const VERSION = 'fss-v11'");
+    expect(readFileSync('public/sw.js', 'utf8')).toContain("const VERSION = 'fss-v12'");
     expect(readFileSync('public/sw.js', 'utf8')).toContain('html.matchAll');
     expect(readFileSync('public/sw.js', 'utf8')).toContain('ignoreVary: true');
-    expect(readFileSync('public/manifest.webmanifest', 'utf8')).toContain('"start_url": "/?v=11"');
+    expect(readFileSync('public/manifest.webmanifest', 'utf8')).toContain('"start_url": "/?v=12"');
   });
 
   it('rewrites only real app routes and serves a designed 404 for unknown paths', () => {
@@ -58,6 +58,13 @@ describe('static deployment policy', () => {
       expect(claim.test).toContain(tag);
       expect(browserTests.split(tag)).toHaveLength(2);
     }
+  });
+
+  it('keeps the catalog description verb-first and within 120 characters', () => {
+    const description = readFileSync('.factory/catalog-description.txt', 'utf8').trim();
+    expect(description.length).toBeLessThanOrEqual(120);
+    expect(description).toMatch(/^Practice\b/);
+    expect(description).not.toMatch(/\b(?:leverage|seamless|effortless|robust|powerful|intuitive|reimagine|supercharge|delightful|journey|ecosystem)\b/i);
   });
 
   it('makes the production billing contract a required release gate', () => {

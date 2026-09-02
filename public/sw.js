@@ -1,4 +1,4 @@
-const VERSION = 'fss-v11';
+const VERSION = 'fss-v12';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 const PRECACHE = ['/', '/demo', '/library', '/about', '/offline.html', '/offline.css', '/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png', '/assets/topographic-route-768.webp', '/assets/topographic-route-1280.webp', '/assets/social-card.jpg', '/privacy/', '/terms/'];

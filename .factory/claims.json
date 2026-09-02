@@ -35,6 +35,13 @@
     "sandbox": "fresh /demo session with request logging across a typed response, reveal, and rating"
   },
   {
+    "id": "no-advertising-scripts",
+    "claim": "No analytics or advertising trackers, third-party fonts, or third-party runtime scripts ship.",
+    "where": "README Data and privacy; Privacy What leaves the device",
+    "test": "npm run test:e2e -- --grep \"@claim:no-advertising-scripts\"",
+    "sandbox": "fresh landing, demo, and Privacy flow with full request and resource logging; inspect built HTML, CSS, JavaScript, and service worker for third-party loading and known analytics or advertising integrations"
+  },
+  {
     "id": "json-backup",
     "claim": "Everyone can export and restore the complete local record as JSON.",
     "where": "landing facts and steps, Library, README",

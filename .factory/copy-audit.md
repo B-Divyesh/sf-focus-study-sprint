@@ -1,4 +1,4 @@
-# Landing-page copy audit
+# Product copy audit
 
 Audited from the rendered `/` page and current README on 2026-09-02. Hyphenated
 terms and numbers count as one word. Interface labels are listed separately from
@@ -33,7 +33,7 @@ complete sentences.
 
 No sentence exceeds 22 words. No sentence contains a banned marketing word.
 
-## Round 4 copy changes
+## README sentences added or changed through round 5
 
 | Copy | Words | Result |
 | --- | ---: | --- |
@@ -41,11 +41,13 @@ No sentence exceeds 22 words. No sentence contains a banned marketing word.
 | This check fails when purchase setup is missing. | 8 | Pass; no untestable payment-side-effect promise. |
 | The browser stores prompts, responses, recaps, saved sets, display preference, and your license token. | 14 | Pass; storage is stated separately. |
 | A license check sends only the token to the Sociobot billing API. | 13 | Pass; the outbound verification path is explicit. |
+| No analytics, advertising trackers, or third-party fonts and scripts ship. | 9 | Pass; registered as `no-advertising-scripts`. |
 | Complete a study session to add its private recap here. | 10 | Pass; history empty state names the next step. |
 
 The README contains no sentence over 22 words and no banned marketing word. Its
 opening names the user and job in 15 words. The license explanation distinguishes
-browser storage from the one token sent for verification.
+browser storage from the one token sent for verification. The no-tracking sentence
+now has its own registered request-log and production-artifact test.
 
 ## Headings, actions, and labels
 

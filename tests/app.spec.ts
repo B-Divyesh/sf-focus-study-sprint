@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
+import { join } from 'node:path';
 
 test('@claim:demo-isolation keeps sample work separate from real browser data', async ({ page }) => {
   const sentinel = 'REAL PRIVATE DRAFT :: must not appear in demo';
@@ -80,6 +81,49 @@ test('@claim:local-privacy sends no study data or analytics from the demo flow',
   await page.getByRole('button', { name: /Recalled/ }).click();
   expect(requests.length).toBeGreaterThan(0);
   expect(requests.every((url) => new URL(url).origin === new URL(page.url()).origin)).toBe(true);
+});
+
+test('@claim:no-advertising-scripts ships no analytics, advertising trackers, third-party fonts, or third-party runtime scripts', async ({ page }) => {
+  const requests: string[] = [];
+  page.on('request', (request) => requests.push(request.url()));
+
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Try it with sample data' }).click();
+  await page.getByLabel(/Your answer/).fill('A private response for the request log');
+  await page.getByRole('button', { name: /Reveal answer/ }).click();
+  await page.getByRole('button', { name: 'Recalled' }).click();
+  await page.goto('/privacy/');
+
+  const productOrigin = new URL(page.url()).origin;
+  expect(requests.length).toBeGreaterThan(0);
+  expect(requests.filter((url) => new URL(url).origin !== productOrigin)).toEqual([]);
+
+  const runtimeSources = await page.evaluate(() => ({
+    resources: performance.getEntriesByType('resource').map((entry) => entry.name),
+    scripts: [...document.scripts].map((script) => script.src).filter(Boolean),
+    stylesheets: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].map((link) => link.href),
+    preconnects: [...document.querySelectorAll<HTMLLinkElement>('link[rel="preconnect"], link[rel="dns-prefetch"]')].map((link) => link.href)
+  }));
+  for (const url of [...runtimeSources.resources, ...runtimeSources.scripts, ...runtimeSources.stylesheets, ...runtimeSources.preconnects]) {
+    expect(new URL(url).origin, `third-party runtime resource: ${url}`).toBe(productOrigin);
+  }
+
+  const files = (await readdir('dist', { recursive: true }))
+    .filter((file) => /\.(?:html|css|js|mjs)$/i.test(file));
+  expect(files.length).toBeGreaterThan(0);
+  const shippedSource = (await Promise.all(files.map(async (file) => readFile(join('dist', file), 'utf8')))).join('\n');
+  const forbiddenIntegrations: Array<[string, RegExp]> = [
+    ['browser beacon', /navigator\.sendBeacon/i],
+    ['Google analytics or advertising', /google-analytics|googletagmanager|googlesyndication|doubleclick|gtag\s*\(|dataLayer/i],
+    ['Meta advertising', /connect\.facebook\.net|facebook\.com\/tr|fbq\s*\(/i],
+    ['advertising network', /adservice|adsystem|adnxs|advertising\.com/i],
+    ['analytics vendor', /plausible\.io|cdn\.segment\.com|api\.segment\.io|mixpanel|hotjar|clarity\.ms|amplitude|posthog/i],
+    ['external runtime script', /<script[^>]+src=["'](?:https?:)?\/\//i],
+    ['external stylesheet or font import', /(?:<link[^>]+rel=["']stylesheet["'][^>]+href|@import\s+(?:url\()?)[^;\n]*["']?(?:https?:)?\/\//i]
+  ];
+  for (const [name, pattern] of forbiddenIntegrations) {
+    expect(shippedSource, `${name} found in production output`).not.toMatch(pattern);
+  }
 });
 
 test('@claim:billing-destination sends license checks only to Sociobot billing and uses its checkout URL', async ({ page }) => {
@@ -417,7 +461,7 @@ test('@claim:installable-shell publishes a standalone manifest and active servic
   });
   expect(installation.manifestHref).toBe('/manifest.webmanifest');
   expect(installation.manifest).toMatchObject({
-    name: 'Focus Study Sprint', short_name: 'Study Sprint', start_url: '/?v=11', display: 'standalone', scope: '/'
+    name: 'Focus Study Sprint', short_name: 'Study Sprint', start_url: '/?v=12', display: 'standalone', scope: '/'
   });
   expect(installation.manifest.icons).toEqual(expect.arrayContaining([
     expect.objectContaining({ src: '/icons/icon-192.png', sizes: '192x192' }),
