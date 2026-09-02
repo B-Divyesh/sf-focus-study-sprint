@@ -1,6 +1,6 @@
 import './style.css';
 import { createStorage } from './db';
-import { formatClock, isValidImport, recap, validatePromptInput } from './logic';
+import { formatClock, isValidActiveSnapshot, isValidImport, recap, validatePromptInput } from './logic';
 import { cachedUnlock, captureLicenseFromUrl, CHECKOUT_URL, saveLicense, verifyLicense } from './license';
 import type { Prompt, Response as StudyResponse, SavedDeck, SessionRecord, Theme } from './types';
 
@@ -75,13 +75,23 @@ function persistActive(): void {
 
 function restoreActive(): boolean {
   try {
-    const snapshot = JSON.parse(localStorage.getItem(ACTIVE_KEY) ?? '') as ActiveSnapshot;
-    if (!snapshot.startedAt || !Array.isArray(snapshot.prompts) || !snapshot.prompts.length || !Array.isArray(snapshot.responses)) return false;
+    const raw = localStorage.getItem(ACTIVE_KEY);
+    if (!raw) return false;
+    const snapshot: unknown = JSON.parse(raw);
+    if (!isValidActiveSnapshot(snapshot)) {
+      localStorage.removeItem(ACTIVE_KEY);
+      state.message = 'An unfinished session could not be restored. Start a new study session when ready.';
+      return false;
+    }
     Object.assign(state, snapshot);
     state.remaining = snapshot.paused ? snapshot.remaining : Math.max(0, Math.ceil((snapshot.endAt - Date.now()) / 1000));
     state.screen = 'session';
     return true;
-  } catch { return false; }
+  } catch {
+    localStorage.removeItem(ACTIVE_KEY);
+    state.message = 'An unfinished session could not be restored. Start a new study session when ready.';
+    return false;
+  }
 }
 
 function escapeHtml(value: string): string {
@@ -164,7 +174,7 @@ function shell(content: string): string {
     <main id="main" tabindex="-1">${content}</main>
     <footer>
       <p>Short answer-practice sessions for students and self-learners.</p>
-      <div><a href="${routeFor('about')}" data-nav="about">About</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Built by Param Factory</span><span>v1.1.1 · repair-7</span></div>
+      <div><a href="${routeFor('about')}" data-nav="about">About</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Built by Param Factory</span><span>v1.1.2 · polish-2</span></div>
     </footer>
     <div class="sr-only" aria-live="polite" id="live-region"></div>
     ${state.updateReady ? '<div class="update-toast" role="status"><span>An app update is ready.</span><button data-update>Update app</button></div>' : ''}

@@ -62,6 +62,43 @@ export function isValidResponse(value: unknown): value is Response {
     (value.rating === 'recalled' || value.rating === 'practice');
 }
 
+/**
+ * Active sessions live in localStorage so an interrupted study session can
+ * resume after a refresh. Treat that storage as untrusted: an older build,
+ * browser extension, or manual edit must never be able to break rendering.
+ */
+export function isValidActiveSnapshot(value: unknown): value is {
+  prompts: Prompt[];
+  current: number;
+  response: string;
+  revealed: boolean;
+  responses: Response[];
+  remaining: number;
+  endAt: number;
+  paused: boolean;
+  startedAt: string;
+  duration: number;
+} {
+  if (!isRecord(value)) return false;
+  const durations = [5, 10, 20];
+  const prompts = value.prompts;
+  const current = value.current;
+  const remaining = value.remaining;
+  const endAt = value.endAt;
+  const duration = value.duration;
+  if (!Array.isArray(prompts) || prompts.length < 5 || prompts.length > 30 || !prompts.every(isValidPrompt)) return false;
+  if (typeof current !== 'number' || !Number.isInteger(current) || current < 0 || current >= prompts.length) return false;
+  if (!isString(value.response) || typeof value.revealed !== 'boolean' || !Array.isArray(value.responses) || !value.responses.every(isValidResponse)) return false;
+  if (value.responses.length !== current) return false;
+  if (typeof duration !== 'number' || !durations.includes(duration) || typeof remaining !== 'number' || !Number.isFinite(remaining) || remaining < 0 || remaining > duration * 60) return false;
+  if (typeof endAt !== 'number' || !Number.isFinite(endAt) || endAt <= 0 || typeof value.paused !== 'boolean') return false;
+  if (!isNonEmptyString(value.startedAt) || !Number.isFinite(Date.parse(value.startedAt))) return false;
+  return value.responses.every((response, index) => {
+    const prompt = prompts[index];
+    return response.promptId === prompt.id && response.question === prompt.question && response.expected === prompt.answer;
+  });
+}
+
 export function isValidSessionRecord(value: unknown): value is SessionRecord {
   if (!isRecord(value)) return false;
   return isNonEmptyString(value.id) && isNonEmptyString(value.startedAt) &&

@@ -36,8 +36,7 @@ npm run dev
 ```
 
 Open the printed local URL. No environment variables or backend are required for the
-free experience. The production billing endpoint is intentionally public and contains
-no product secret.
+free experience. The payment link is public and contains no private key.
 
 ## Test and build
 
@@ -58,15 +57,14 @@ npm test
 Preview the built result with `npm run preview`. The Playwright suite starts its own
 preview server when one is not already running.
 
-Before a production release, run the complete release gate:
+Before release, run this check to confirm that the $12 Contour purchase is registered:
 
 ```sh
 npm run test:release
 ```
 
-The release gate checks the live billing contract. The catalog must list this $12 product and return URL.
-Checkout must redirect to Sociobot/Dodo. This check fails when factory billing registration is missing.
-It never starts a payment.
+The catalog must list this $12 product and its return URL. Checkout must redirect to Sociobot/Dodo.
+This check fails when purchase setup is missing. It never starts a payment.
 
 ## Data and privacy
 
@@ -77,9 +75,9 @@ Library → Export JSON for a portable backup.
 
 ## Deployment
 
-Deploy the contents of `dist/` as a static site with clean-directory URLs enabled.
+Deploy the files in `dist/` to hosting that opens direct links such as `/demo` and `/privacy/`.
 Do not configure infrastructure, DNS, or billing from this repository. The Param Factory registers the product and checkout return URL separately.
-The release gate must pass before deployment.
+The purchase check must pass before deployment.
 
 ## Project notes
 

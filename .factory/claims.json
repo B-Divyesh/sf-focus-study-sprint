@@ -42,6 +42,20 @@
     "sandbox": "fresh /demo session; create a record and a saved prompt set, export, clear, import the downloaded file, and reuse the restored set"
   },
   {
+    "id": "free-core",
+    "claim": "Core study sessions and JSON backup are free without a license.",
+    "where": "landing hero fact, price section, Library, README",
+    "test": "npm run test:e2e -- --grep \"@claim:free-core\"",
+    "sandbox": "fresh non-demo, unlicensed browser context; complete five prompts, export JSON, clear local data, and restore the download without a license request"
+  },
+  {
+    "id": "scope-limits",
+    "claim": "The app presents supplied prompt pairs but does not teach content, grade answers, or generate content.",
+    "where": "landing scope section, About, README",
+    "test": "npm run test:e2e -- --grep \"@claim:scope-limits\"",
+    "sandbox": "fresh demo; verify the shipped prompt and expected answer, self-rating controls and non-grade recap, and no content-generation request"
+  },
+  {
     "id": "accessible-layout",
     "claim": "The first action and 44px controls fit without horizontal overflow at 390px and desktop widths.",
     "where": "landing first screen, README",

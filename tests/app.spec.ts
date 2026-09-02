@@ -124,6 +124,54 @@ test('@claim:json-backup exports and restores the complete local record', async 
   await expect(page.getByLabel(/One prompt and answer/)).toHaveValue(/What process do plants use to convert light into energy\? :: Photosynthesis/);
 });
 
+test('@claim:free-core lets an unlicensed real workspace complete, export, and restore a study session', async ({ page }) => {
+  const licenseRequests: string[] = [];
+  page.on('request', (request) => {
+    if (new URL(request.url()).origin === 'https://api.sociobot.in') licenseRequests.push(request.url());
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Load sample into my draft' }).click();
+  await page.getByRole('button', { name: 'Start study session' }).click();
+  for (let index = 0; index < 5; index += 1) {
+    await page.getByRole('button', { name: /Reveal answer/ }).click();
+    await page.getByRole('button', { name: /Recalled/ }).click();
+  }
+  await expect(page.getByRole('heading', { name: 'Your study session is complete.' })).toBeVisible();
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: /Export my data/ }).click();
+  const backup = await downloadPromise;
+  const backupPath = await backup.path();
+  if (!backupPath) throw new Error('The free workspace did not create a JSON backup.');
+  const exported = JSON.parse(await readFile(backupPath, 'utf8')) as { sessions: unknown[] };
+  expect(exported.sessions).toHaveLength(1);
+  await page.getByRole('link', { name: 'Library' }).click();
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'Clear local data' }).click();
+  await expect(page.getByText('No sessions recorded')).toBeVisible();
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.locator('input[data-import]').setInputFiles(backupPath);
+  await expect(page.getByText('5 checked · 0 to revisit')).toBeVisible();
+  expect(licenseRequests).toEqual([]);
+});
+
+test('@claim:scope-limits presents supplied prompts without grading, teaching, or content-generation requests', async ({ page }) => {
+  const requests: string[] = [];
+  page.on('request', (request) => requests.push(request.url()));
+  await page.goto('/demo');
+  await expect(page.getByText('What process do plants use to convert light into energy?')).toBeVisible();
+  await page.getByRole('button', { name: /Reveal answer/ }).click();
+  await expect(page.getByRole('region', { name: 'Expected answer' })).toContainText('Photosynthesis');
+  await expect(page.getByRole('button', { name: 'Recalled' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Keep practicing' })).toBeVisible();
+  await expect(page.getByText('Correct', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Incorrect', { exact: true })).toHaveCount(0);
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'End session and see recap' }).click();
+  await expect(page.getByText('This is a record of today’s practice, not a grade.')).toBeVisible();
+  expect(requests.every((url) => new URL(url).origin === new URL(page.url()).origin)).toBe(true);
+  expect(requests.some((url) => url.includes('/v1/responses') || url.includes('api.sociobot.in'))).toBe(false);
+});
+
 test('validates malformed input and exposes the recovery instruction', async ({ page }) => {
   await page.goto('/');
   const input = page.getByLabel(/One prompt and answer/);
@@ -204,6 +252,30 @@ test('restores an in-progress sprint and response after refresh', async ({ page 
   await expect(page.getByLabel(/Your answer/)).toHaveValue('My working answer');
 });
 
+test('removes a malformed active-session snapshot and returns to usable setup', async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  await page.addInitScript(() => localStorage.setItem('fss:active-session', JSON.stringify({
+    prompts: [{ id: 'prompt-1', question: 'One valid-looking prompt', answer: 'One answer' }],
+    current: 1,
+    response: '',
+    revealed: false,
+    responses: [],
+    remaining: 300,
+    endAt: Date.now() + 300_000,
+    paused: false,
+    startedAt: '2026-09-02T10:00:00.000Z',
+    duration: 5
+  })));
+  await page.goto('/');
+  await expect(page.locator('main')).toBeVisible();
+  await expect(page.locator('h1')).toHaveCount(1);
+  await expect(page.getByLabel(/One prompt and answer/)).toBeVisible();
+  await expect(page.getByText('An unfinished session could not be restored. Start a new study session when ready.')).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('fss:active-session'))).toBeNull();
+  expect(pageErrors).toEqual([]);
+});
+
 test('@claim:offline-reload app shell and sample session work offline after the first visit', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
@@ -264,7 +336,7 @@ test('@claim:installable-shell publishes a standalone manifest and active servic
   });
   expect(installation.manifestHref).toBe('/manifest.webmanifest');
   expect(installation.manifest).toMatchObject({
-    name: 'Focus Study Sprint', short_name: 'Study Sprint', start_url: '/?v=8', display: 'standalone', scope: '/'
+    name: 'Focus Study Sprint', short_name: 'Study Sprint', start_url: '/?v=9', display: 'standalone', scope: '/'
   });
   expect(installation.manifest.icons).toEqual(expect.arrayContaining([
     expect.objectContaining({ src: '/icons/icon-192.png', sizes: '192x192' }),
@@ -477,6 +549,9 @@ test('offline fallback and designed 404 render without console errors', async ({
   await expect(page).toHaveTitle('Page not found — Focus Study Sprint');
   await expect(page.getByRole('heading', { name: 'This page does not exist' })).toBeVisible();
   await expect(page.locator('h1')).toHaveCount(1);
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', 'Page not found — Focus Study Sprint');
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /social-card\.jpg$/);
+  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
   expect(errors).toEqual([]);
 });
 

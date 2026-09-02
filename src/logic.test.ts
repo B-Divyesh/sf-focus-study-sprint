@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatClock, isValidImport, parsePrompts, recap, validatePromptInput } from './logic';
+import { formatClock, isValidActiveSnapshot, isValidImport, parsePrompts, recap, validatePromptInput } from './logic';
 
 describe('prompt parsing', () => {
   it('parses supported separators and preserves answer text', () => {
@@ -78,5 +78,36 @@ describe('backup schema validation', () => {
     ['saved prompt', { ...validExport, decks: [{ ...validExport.decks[0], prompts: [{ id: 'prompt-1', question: 'Capital?' }] }] }]
   ])('rejects an invalid %s record', (_name, candidate) => {
     expect(isValidImport(candidate)).toBe(false);
+  });
+});
+
+describe('active-session snapshot validation', () => {
+  const prompts = Array.from({ length: 5 }, (_, index) => ({ id: `prompt-${index}`, question: `Question ${index}`, answer: `Answer ${index}` }));
+  const snapshot = {
+    prompts,
+    current: 1,
+    response: '',
+    revealed: false,
+    responses: [{ promptId: 'prompt-0', question: 'Question 0', expected: 'Answer 0', response: 'My answer', rating: 'recalled' }],
+    remaining: 294,
+    endAt: Date.now() + 294_000,
+    paused: false,
+    startedAt: '2026-09-02T10:00:00.000Z',
+    duration: 5
+  };
+
+  it('accepts a complete active session snapshot', () => {
+    expect(isValidActiveSnapshot(snapshot)).toBe(true);
+  });
+
+  it.each([
+    ['out-of-range prompt index', { ...snapshot, current: 5 }],
+    ['malformed prompt', { ...snapshot, prompts: [{ id: 'only-id' }] }],
+    ['malformed response', { ...snapshot, responses: [{ promptId: 'prompt-0' }] }],
+    ['unsupported duration', { ...snapshot, duration: 7 }],
+    ['negative remaining time', { ...snapshot, remaining: -1 }],
+    ['invalid flags', { ...snapshot, revealed: 'yes' }]
+  ])('rejects a snapshot with %s', (_name, candidate) => {
+    expect(isValidActiveSnapshot(candidate)).toBe(false);
   });
 });
