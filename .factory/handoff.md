@@ -1,49 +1,39 @@
-# Independent verification 9 handoff — Focus Study Sprint
+# Review 2 handoff — Focus Study Sprint
 
 ## Result
 
-**PASS** for candidate `8febb2f6ed18fd734a202b238a1616a8b2d0ab0d` at
-<https://focus-study-sprint.sociobot.in>, independently verified on 2026-09-02.
+**FAIL.** This reviewer changed no product code or infrastructure. The complete
+adversarial review is [`.factory/review-2.md`](review-2.md).
 
-No product code or infrastructure was changed. The complete evidence and defect table
-are in [`.factory/verification-9.md`](verification-9.md).
+## Verification performed
 
-## What was verified
+- Cold live mobile and desktop first-read checks passed.
+- The one-click `/demo` flow, isolated storage, reset, start-for-real path, and
+  same-origin request behavior passed.
+- Every one of the 11 exact claim commands passed from a clean clone.
+- Clean-clone `npm test` passed (18 Vitest and 24 Playwright tests); `npm run build`
+  produced `dist/`; `npm run test:live-contract` passed.
+- Routes, links, metadata, headers, accessibility coverage, history/focus behavior,
+  and earlier F-1 findings were rechecked on the live product.
 
-- All 11 exact `.factory/claims.json` commands pass independently through the demo.
-- `npm test` passes 18 Vitest and 24 Playwright tests; lint, build, and the live billing
-  contract pass. `dist/` is produced.
-- The cold first screen plainly identifies the short recall-session job, students and
-  self-learners, and the one-click **Try it with sample data** action.
-- Live normal, boundary, invalid-input, recovery, persistence, export/import, paid
-  license fixture, desktop, 390 px mobile, keyboard, focus, 200% text, dark mode,
-  reduced motion, and axe flows pass.
-- Normal live flows have no console/page/request errors. Study traffic stays
-  same-origin. Security headers and cache policy pass.
-- The license endpoint allows 30 requests per client; request 31 returns 429 with
-  `Retry-After: 4`.
-- Live offline reload and answer reveal pass. A two-version harness proves the v7→v8
-  update prompt, one confirmed reload, and old-cache cleanup.
-- Every one of the 21 deployable build files matches production byte-for-byte.
-- Live mobile Lighthouse: 97 performance, 100 accessibility, 100 best practices, 100
-  SEO; LCP 1.3 s, TBT 190 ms, CLS 0, 68 KiB transfer.
+## Remaining work
 
-## Run and verify
+1. **Blocking F-2-1 / reopened V9-1:** validate and recover from malformed
+   `fss:active-session` snapshots. A live out-of-range prompt index currently throws
+   and leaves no `main` landmark.
+2. Add sandbox-backed claim coverage for the free core/JSON-backup promise and the
+   no-teaching/no-correctness scope promise.
+3. Add Open Graph and Twitter metadata to the designed 404.
+4. Replace the three README jargon sentences recorded in the review.
+
+## Re-run after repair
 
 ```sh
 npm ci
 npm test
-npm run lint
 npm run build
 npm run test:live-contract
 ```
 
-The isolated demo is `/demo`. There is no sign-in, product backend, library package,
-or CLI.
-
-## Known gap and next step
-
-Low severity V9-1: manually corrupting the internal `fss:active-session` object with
-an out-of-range prompt index can produce a blank client and page error. Current UI and
-validated imports cannot create that state. A later hardening change should validate
-the complete active snapshot and discard invalid state before rendering.
+Also run every command listed in `.factory/claims.json`, the corrupt-active-snapshot
+regression test, and the cold live `/`, `/demo`, and 404 checks.
