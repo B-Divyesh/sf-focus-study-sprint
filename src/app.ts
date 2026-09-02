@@ -182,7 +182,7 @@ function shell(content: string): string {
     <main id="main" tabindex="-1">${content}</main>
     <footer>
       <p>Short answer-practice sessions for students and self-learners.</p>
-      <div><a href="${routeFor('about')}" data-nav="about">About</a><a href="${demoExitHref('/privacy/')}" ${DEMO_MODE ? 'data-demo-exit' : ''}>Privacy</a><a href="${demoExitHref('/terms/')}" ${DEMO_MODE ? 'data-demo-exit' : ''}>Terms</a><span>Built by Param Factory</span><span>v1.1.3 · polish-3</span></div>
+      <div><a href="${routeFor('about')}" data-nav="about">About</a><a href="${demoExitHref('/privacy/')}" ${DEMO_MODE ? 'data-demo-exit' : ''}>Privacy</a><a href="${demoExitHref('/terms/')}" ${DEMO_MODE ? 'data-demo-exit' : ''}>Terms</a><span>Built by Param Factory</span><span>v1.1.4 · polish-4</span></div>
     </footer>
     <div class="sr-only" aria-live="polite" id="live-region"></div>
     ${state.updateReady ? '<div class="update-toast" role="status"><span>An app update is ready.</span><button data-update>Update app</button></div>' : ''}
@@ -304,13 +304,13 @@ function libraryView(): string {
       <div class="library-grid">
         <section aria-labelledby="decks-title">
           <div class="section-heading"><h2 id="decks-title">Reusable prompt sets</h2>${state.unlocked ? '<button class="text-button" data-save-draft>Save current draft</button>' : ''}</div>
-          ${state.unlocked ? (state.decks.length ? `<ul class="deck-list">${state.decks.map((deck) => `<li><div><strong>${escapeHtml(deck.name)}</strong><span>${deck.prompts.length} prompts</span></div><div><button data-load-deck="${deck.id}">Use</button><button class="danger-button" data-delete-deck="${deck.id}" aria-label="Delete ${escapeHtml(deck.name)}">Delete</button></div></li>`).join('')}</ul>` : '<div class="empty-state"><span class="map-mark">×</span><h3>No saved sets yet</h3><p>Return to Start, paste a valid set, then save it here.</p></div>') : `
+          ${state.unlocked ? (state.decks.length ? `<ul class="deck-list">${state.decks.map((deck) => `<li><div><strong>${escapeHtml(deck.name)}</strong><span>${deck.prompts.length} prompts</span></div><div><button data-load-deck="${deck.id}" aria-label="Load ${escapeHtml(deck.name)} prompt set">Load this prompt set</button><button class="danger-button" data-delete-deck="${deck.id}" aria-label="Delete ${escapeHtml(deck.name)}">Delete</button></div></li>`).join('')}</ul>` : '<div class="empty-state"><span class="map-mark">×</span><h3>No saved sets yet</h3><p>Return to Start, paste a valid set, then save it here.</p></div>') : `
             <div class="unlock-panel"><span class="map-mark">◇</span><h3>Reuse prompt sets</h3><p>The $12 one-time Contour license adds reusable prompt sets and your latest 20 on-device session records. Starting sessions and exporting data stay free.</p><a class="primary-action" href="${CHECKOUT_URL}">Buy Contour once for $12</a><button class="text-button" data-license-dialog>Have a license? Restore it</button><p class="merchant-note">Checkout is handled by Sociobot / Dodo, merchant of record. No subscription.</p></div>
           `}
         </section>
         <section aria-labelledby="history-title">
           <div class="section-heading"><h2 id="history-title">Recent sessions</h2><span>${state.unlocked ? 'Latest 20' : 'Latest 3'}</span></div>
-          ${recent.length ? `<ol class="history-list">${recent.map((session) => { const result = recap(session.responses); return `<li><time datetime="${session.startedAt}">${new Date(session.startedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time><span>${result.answered} checked · ${result.practice} to revisit</span></li>`; }).join('')}</ol>` : '<div class="empty-state"><span class="map-mark">○</span><h3>No sessions recorded</h3><p>Your first private recap will appear here.</p></div>'}
+          ${recent.length ? `<ol class="history-list">${recent.map((session) => { const result = recap(session.responses); return `<li><time datetime="${session.startedAt}">${new Date(session.startedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time><span>${result.answered} checked · ${result.practice} to revisit</span></li>`; }).join('')}</ol>` : '<div class="empty-state"><span class="map-mark">○</span><h3>No sessions recorded</h3><p>Complete a study session to add its private recap here.</p><a class="empty-action" href="/" data-nav="setup">Start a study session</a></div>'}
           ${!state.unlocked && state.sessions.length > 3 ? '<p class="quiet-notice">Contour shows your latest 20 sessions after unlocking. All sessions remain in your JSON export.</p>' : ''}
         </section>
       </div>
@@ -318,9 +318,9 @@ function libraryView(): string {
         <h2 id="data-title">Own your data</h2><p>Download or restore a JSON backup. Import replaces the data currently on this device.</p>
         <div><button class="secondary-action" data-export>Export JSON ${icon('download')}</button><label class="secondary-action file-action">Import JSON<input type="file" accept="application/json,.json" data-import></label><button class="danger-button" data-clear>Clear local data</button></div>
       </section>
-      ${state.installPrompt ? '<button class="install-card" data-install><strong>Install for quicker offline access</strong><span>Add the app to this device. No account needed. →</span></button>' : ''}
+      ${state.installPrompt ? '<button class="install-card" data-install><strong>Install for offline access</strong><span>Add the app to this device. No account needed. →</span></button>' : ''}
       ${state.licenseNotice ? `<p class="quiet-notice">${escapeHtml(state.licenseNotice)} <a href="${CHECKOUT_URL}">Get a new license</a>.</p>` : ''}
-      <dialog id="license-dialog" aria-labelledby="license-title"><form method="dialog"><button class="dialog-close" value="cancel" aria-label="Close">×</button><p class="coordinate">RESTORE PURCHASE</p><h2 id="license-title">Enter your license</h2><p>Paste the token from your purchase email. Verification never blocks free study.</p><label for="license-input">License token</label><input id="license-input" autocomplete="off"><p class="form-error" data-license-error aria-live="polite"></p><button class="primary-action" type="button" data-restore-license>Verify and restore</button></form></dialog>
+      <dialog id="license-dialog" aria-labelledby="license-title"><form method="dialog"><button class="dialog-close" value="cancel" aria-label="Close">×</button><p class="coordinate">RESTORE PURCHASE</p><h2 id="license-title">Enter your license</h2><p>Paste the token from your purchase email.</p><label for="license-input">License token</label><input id="license-input" autocomplete="off"><p class="form-error" data-license-error aria-live="polite"></p><button class="primary-action" type="button" data-restore-license>Verify and restore</button></form></dialog>
     </section>
   `);
 }

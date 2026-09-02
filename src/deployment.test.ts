@@ -35,10 +35,10 @@ describe('static deployment policy', () => {
   });
 
   it('ships a versioned app shell for service-worker update activation', () => {
-    expect(readFileSync('public/sw.js', 'utf8')).toContain("const VERSION = 'fss-v10'");
+    expect(readFileSync('public/sw.js', 'utf8')).toContain("const VERSION = 'fss-v11'");
     expect(readFileSync('public/sw.js', 'utf8')).toContain('html.matchAll');
     expect(readFileSync('public/sw.js', 'utf8')).toContain('ignoreVary: true');
-    expect(readFileSync('public/manifest.webmanifest', 'utf8')).toContain('"start_url": "/?v=10"');
+    expect(readFileSync('public/manifest.webmanifest', 'utf8')).toContain('"start_url": "/?v=11"');
   });
 
   it('rewrites only real app routes and serves a designed 404 for unknown paths', () => {

@@ -1,6 +1,6 @@
 # Focus Study Sprint
 
-A calm practice tool for students who want short sessions without streaks, feeds, or generated lessons.
+A practice tool for students who want short sessions without streaks, feeds, or generated lessons.
 Paste 5–30 `prompt :: answer` pairs. Choose 5, 10, or 20 minutes. Finish one study session.
 Recaps and reusable sets stay in the browser.
 
@@ -65,13 +65,13 @@ npm run test:release
 ```
 
 The catalog must list this $12 product and its return URL. Checkout must redirect to Sociobot/Dodo.
-This check fails when purchase setup is missing. It never starts a payment.
+This check fails when purchase setup is missing.
 
 ## Data and privacy
 
-Prompts, responses, recaps, saved sets, display preference, and any license token are
-local to the browser. No analytics or advertising scripts ship. License checks contact
-only the Sociobot billing API. Clearing site data can remove records; use
+The browser stores prompts, responses, recaps, saved sets, display preference, and
+your license token. A license check sends only the token to the Sociobot billing API.
+No analytics or advertising scripts ship. Clearing site data can remove records; use
 Library → Export JSON for a portable backup.
 
 ## Deployment

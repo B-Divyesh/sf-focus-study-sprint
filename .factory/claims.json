@@ -11,7 +11,7 @@
     "claim": "A study session accepts 5–30 prompt pairs and offers 5, 10, or 20 minutes.",
     "where": "setup form, How it works, README",
     "test": "npm run test:e2e -- --grep \"@claim:input-limits\"",
-    "sandbox": "isolated demo setup; assert four and 31 pairs fail, five pairs pass, and three duration choices exist"
+    "sandbox": "isolated demo setup; assert four and 31 pairs fail, five pairs pass, values are 5/10/20, and exactly 30 pairs open prompt 1 of 30"
   },
   {
     "id": "study-flow",
@@ -50,10 +50,10 @@
   },
   {
     "id": "scope-limits",
-    "claim": "The app presents supplied prompt pairs but does not teach content, grade answers, or generate content.",
+    "claim": "The app presents supplied prompt pairs but does not teach content, grade answers, generate content, or use streak, feed, reward, or return-nudge mechanics.",
     "where": "landing scope section, About, README",
     "test": "npm run test:e2e -- --grep \"@claim:scope-limits\"",
-    "sandbox": "fresh demo; verify the shipped prompt and expected answer, self-rating controls and non-grade recap, and no content-generation request"
+    "sandbox": "fresh demo across setup, session, recap, Library, and About; verify supplied content, self-rating, no generation request, and no streak/feed/reward/nudge UI or storage"
   },
   {
     "id": "accessible-layout",
@@ -67,7 +67,7 @@
     "claim": "Light and dark themes keep serious contrast checks clear and reduced-motion removes visible movement.",
     "where": "theme control, README",
     "test": "npm run test:e2e -- --grep \"@claim:display-preferences\"",
-    "sandbox": "fresh reduced-motion context; cycle to dark ten times, scan immediately with axe, and inspect computed durations"
+    "sandbox": "fresh reduced-motion context; select explicit light and dark themes, scan each with axe, and inspect computed durations"
   },
   {
     "id": "contour-price",
@@ -78,10 +78,10 @@
   },
   {
     "id": "billing-destination",
-    "claim": "Checkout uses Sociobot billing and license checks contact only the Sociobot billing API.",
-    "where": "README, Contour purchase controls",
+    "claim": "Checkout uses Sociobot billing, and license verification sends only the stored token to the Sociobot billing API.",
+    "where": "README, Privacy, Contour purchase controls",
     "test": "npm run test:e2e -- --grep \"@claim:billing-destination\"",
-    "sandbox": "fresh unlicensed Library; inspect the checkout destination, restore a recorded license, and record every cross-origin request"
+    "sandbox": "fresh unlicensed Library; inspect the checkout destination, restore a recorded license, and assert the sole cross-origin request has only its license token query parameter"
   },
   {
     "id": "session-timing",

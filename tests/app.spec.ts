@@ -55,10 +55,20 @@ test('@claim:input-limits enforces 5–30 prompt pairs and the three session len
   await expect(page.getByText('Add 1 more pair to begin.')).toBeVisible();
   await input.fill(Array.from({ length: 5 }, (_, index) => `Prompt ${index} :: Answer ${index}`).join('\n'));
   await expect(start).toBeEnabled();
-  await expect(page.locator('input[name="duration"]')).toHaveCount(3);
+  const durations = page.locator('input[name="duration"]');
+  await expect(durations).toHaveCount(3);
+  await expect(durations.evaluateAll((inputs) => inputs.map((input) => input.getAttribute('value')))).resolves.toEqual(['5', '10', '20']);
+  for (let index = 0; index < 3; index += 1) {
+    await durations.nth(index).evaluate((input) => (input as HTMLInputElement).click());
+    await expect(durations.nth(index)).toBeChecked();
+  }
   await input.fill(Array.from({ length: 31 }, (_, index) => `Prompt ${index} :: Answer ${index}`).join('\n'));
   await expect(start).toBeDisabled();
   await expect(page.getByText('Use 30 pairs or fewer.')).toBeVisible();
+  await input.fill(Array.from({ length: 30 }, (_, index) => `Prompt ${index} :: Answer ${index}`).join('\n'));
+  await expect(start).toBeEnabled();
+  await start.click();
+  await expect(page.getByText('PROMPT 1 OF 30', { exact: true })).toBeVisible();
 });
 
 test('@claim:local-privacy sends no study data or analytics from the demo flow', async ({ page }) => {
@@ -91,6 +101,9 @@ test('@claim:billing-destination sends license checks only to Sociobot billing a
   await page.getByRole('button', { name: 'Verify and restore' }).click();
   await expect(page.getByText('Contour features restored on this device.')).toBeVisible();
   expect(crossOriginRequests).toEqual([expectedVerification]);
+  const verificationUrl = new URL(crossOriginRequests[0]);
+  expect([...verificationUrl.searchParams.keys()]).toEqual(['license']);
+  expect(verificationUrl.searchParams.get('license')).toBe('recorded-license');
 });
 
 test('@claim:study-flow completes a keyboard-first recall sprint and persists its recap', async ({ page }) => {
@@ -162,7 +175,7 @@ test('@claim:json-backup exports and restores the complete local record', async 
   await page.locator('input[data-import]').setInputFiles(downloadPath);
   await expect(page.getByText('1 checked · 0 to revisit')).toBeVisible();
   await expect(page.getByText('Biology review', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Use' }).click();
+  await page.getByRole('button', { name: 'Load Biology review prompt set' }).click();
   await expect(page).toHaveURL(/\/demo\?screen=setup$/);
   await expect(page.getByLabel(/One prompt and answer/)).toHaveValue(/What process do plants use to convert light into energy\? :: Photosynthesis/);
 });
@@ -191,16 +204,34 @@ test('@claim:free-core lets an unlicensed real workspace complete, export, and r
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Clear local data' }).click();
   await expect(page.getByText('No sessions recorded')).toBeVisible();
+  await expect(page.getByText('Complete a study session to add its private recap here.')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Start a study session' })).toHaveAttribute('href', '/');
   page.once('dialog', (dialog) => dialog.accept());
   await page.locator('input[data-import]').setInputFiles(backupPath);
   await expect(page.getByText('5 checked · 0 to revisit')).toBeVisible();
   expect(licenseRequests).toEqual([]);
 });
 
-test('@claim:scope-limits presents supplied prompts without grading, teaching, or content-generation requests', async ({ page }) => {
+test('@claim:scope-limits presents supplied prompts without grading, teaching, content generation, streaks, feeds, rewards, or return nudges', async ({ page }) => {
   const requests: string[] = [];
   page.on('request', (request) => requests.push(request.url()));
+  const retentionMechanics = async () => page.evaluate(() => {
+    const markers = [...document.querySelectorAll('[data-streak], [data-feed], [data-reward], [data-badge], [data-points], [data-reminder]')]
+      .map((element) => element.outerHTML);
+    const text = document.body.innerText;
+    const counterOrNudge = [
+      /\b(?:\d+|current|longest)\s*(?:day )?streaks?\b/gi,
+      /\b(?:your|new|latest)\s+feed\b/gi,
+      /\b(?:earn|earned)\s+(?:a\s+)?(?:reward|badge|point)/gi,
+      /\b(?:come back|return)\s+tomorrow\b/gi,
+      /\b(?:daily reminder|remind me|keep (?:your|a) streak)\b/gi
+    ].flatMap((expression) => text.match(expression) ?? []);
+    const storedMechanics = Object.keys(localStorage).filter((key) => /streak|feed|reward|badge|points?|remind/i.test(key));
+    return { markers, counterOrNudge, storedMechanics };
+  });
+  const expectNoRetentionMechanics = async () => expect(await retentionMechanics()).toEqual({ markers: [], counterOrNudge: [], storedMechanics: [] });
   await page.goto('/demo');
+  await expectNoRetentionMechanics();
   await expect(page.getByText('What process do plants use to convert light into energy?')).toBeVisible();
   await page.getByRole('button', { name: /Reveal answer/ }).click();
   await expect(page.getByRole('region', { name: 'Expected answer' })).toContainText('Photosynthesis');
@@ -211,6 +242,13 @@ test('@claim:scope-limits presents supplied prompts without grading, teaching, o
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'End session and see recap' }).click();
   await expect(page.getByText('This is a record of today’s practice, not a grade.')).toBeVisible();
+  await expectNoRetentionMechanics();
+  await page.getByRole('link', { name: 'Library' }).click();
+  await expectNoRetentionMechanics();
+  await page.getByRole('link', { name: 'About' }).click();
+  await expectNoRetentionMechanics();
+  await page.getByRole('link', { name: 'Start', exact: true }).click();
+  await expectNoRetentionMechanics();
   expect(requests.every((url) => new URL(url).origin === new URL(page.url()).origin)).toBe(true);
   expect(requests.some((url) => url.includes('/v1/responses') || url.includes('api.sociobot.in'))).toBe(false);
 });
@@ -379,7 +417,7 @@ test('@claim:installable-shell publishes a standalone manifest and active servic
   });
   expect(installation.manifestHref).toBe('/manifest.webmanifest');
   expect(installation.manifest).toMatchObject({
-    name: 'Focus Study Sprint', short_name: 'Study Sprint', start_url: '/?v=10', display: 'standalone', scope: '/'
+    name: 'Focus Study Sprint', short_name: 'Study Sprint', start_url: '/?v=11', display: 'standalone', scope: '/'
   });
   expect(installation.manifest.icons).toEqual(expect.arrayContaining([
     expect.objectContaining({ src: '/icons/icon-192.png', sizes: '192x192' }),
@@ -526,14 +564,19 @@ test('keeps setup and recovery controls usable at 200% text size on mobile', asy
   await expectNoHorizontalOverflow();
 });
 
-test('@claim:display-preferences applies dark contrast and reduced motion immediately', async ({ page }) => {
+test('@claim:display-preferences keeps light and dark contrast clear and removes motion when requested', async ({ page }) => {
   await page.goto('/');
   const themeButton = page.getByRole('button', { name: 'Change color theme' });
-  for (let run = 0; run < 10; run += 1) {
-    const current = await page.locator('html').getAttribute('data-theme');
-    const clicksToDark = current === 'dark' ? 3 : current === 'light' ? 1 : 2;
-    for (let click = 0; click < clicksToDark; click += 1) await themeButton.click();
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  const selectTheme = async (theme: 'light' | 'dark') => {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      if (await page.locator('html').getAttribute('data-theme') === theme) return;
+      await themeButton.click();
+    }
+    await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+  };
+  for (const theme of ['light', 'dark'] as const) {
+    await selectTheme(theme);
+    await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
     const scan = await new AxeBuilder({ page }).analyze();
     expect(scan.violations.filter((item) => ['serious', 'critical'].includes(item.impact ?? ''))).toEqual([]);
   }
@@ -652,7 +695,7 @@ test('@claim:contour-price unlocks reusable sets and the latest 20 session recor
   });
   await page.getByRole('button', { name: 'Save current draft' }).click();
   await expect(page.getByText('Exam review', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Use' }).click();
+  await page.getByRole('button', { name: 'Load Exam review prompt set' }).click();
   await expect(page.getByLabel(/One prompt and answer/)).toHaveValue(/What process do plants use to convert light into energy\? :: Photosynthesis/);
 
   await page.getByRole('link', { name: 'Library' }).click();
