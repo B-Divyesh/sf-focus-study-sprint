@@ -15,7 +15,7 @@ deployed repair is commit `4d5bcdfb472957f4507f4db44ede99a305947f24` at
 - Added the `billing-destination` claim and recorded-request browser proof. Removed
   the untestable public-key sentence.
 - Rewrote the review-3 wording issues in the landing page, README, privacy policy,
-  and purchase copy. The catalog description is verb-first and 49 characters.
+  and purchase copy. The catalog description is verb-first and 50 characters.
 - Bumped the PWA shell to `fss-v10` / manifest `?v=10` so installed clients receive
   the changed shell.
 
