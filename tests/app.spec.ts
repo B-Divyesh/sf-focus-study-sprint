@@ -264,7 +264,7 @@ test('@claim:installable-shell publishes a standalone manifest and active servic
   });
   expect(installation.manifestHref).toBe('/manifest.webmanifest');
   expect(installation.manifest).toMatchObject({
-    name: 'Focus Study Sprint', short_name: 'Study Sprint', start_url: '/?v=7', display: 'standalone', scope: '/'
+    name: 'Focus Study Sprint', short_name: 'Study Sprint', start_url: '/?v=8', display: 'standalone', scope: '/'
   });
   expect(installation.manifest.icons).toEqual(expect.arrayContaining([
     expect.objectContaining({ src: '/icons/icon-192.png', sizes: '192x192' }),
@@ -481,31 +481,6 @@ test('offline fallback and designed 404 render without console errors', async ({
 });
 
 test('@claim:contour-price unlocks reusable sets and the latest 20 session records for $12', async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('sb_license:focus-study-sprint', 'contour-regression-token'));
-  let licenseChecks = 0;
-  await page.route('https://api.sociobot.in/api/v1/products/focus-study-sprint/verify?license=contour-regression-token', async (route) => {
-    licenseChecks += 1;
-    await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ valid: true, reason: 'ok' }) });
-  });
-  await page.goto('/');
-  const purchase = page.getByRole('link', { name: 'Buy Contour once for $12' });
-  await expect(purchase).toHaveAttribute('href', 'https://api.sociobot.in/api/v1/products/focus-study-sprint/checkout');
-  await expect(page.getByText('Contour adds saved prompt sets and your latest 20 session records.')).toBeVisible();
-  await expect(page.getByText('Study sessions and JSON backup remain free.')).toBeVisible();
-
-  await page.getByRole('button', { name: 'Load sample into my draft' }).click();
-  await page.getByRole('link', { name: 'Library' }).click();
-  await expect(page.getByRole('button', { name: 'Save current draft' })).toBeVisible();
-  page.once('dialog', (dialog) => {
-    expect(dialog.type()).toBe('prompt');
-    void dialog.accept('Exam review');
-  });
-  await page.getByRole('button', { name: 'Save current draft' }).click();
-  await expect(page.getByText('Exam review', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Use' }).click();
-  await expect(page.getByLabel(/One prompt and answer/)).toHaveValue(/What process do plants use to convert light into energy\? :: Photosynthesis/);
-
-  await page.getByRole('link', { name: 'Library' }).click();
   const sessions = Array.from({ length: 21 }, (_, index) => {
     const count = index + 1;
     const startedAt = new Date(Date.UTC(2026, 0, count)).toISOString();
@@ -525,6 +500,44 @@ test('@claim:contour-price unlocks reusable sets and the latest 20 session recor
       }))
     };
   });
+
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Library' }).click();
+  await expect(page.getByText('The $12 one-time Contour license adds reusable prompt sets and your latest 20 on-device session records.')).toBeVisible();
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.locator('input[data-import]').setInputFiles({
+    name: 'contour-history.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({ product: 'focus-study-sprint', version: 1, exportedAt: '2026-01-31T00:00:00.000Z', sessions, decks: [] }))
+  });
+  await expect(page.getByText('Contour shows your latest 20 sessions after unlocking. All sessions remain in your JSON export.')).toBeVisible();
+
+  await page.addInitScript(() => localStorage.setItem('sb_license:focus-study-sprint', 'contour-regression-token'));
+  let licenseChecks = 0;
+  await page.route('https://api.sociobot.in/api/v1/products/focus-study-sprint/verify?license=contour-regression-token', async (route) => {
+    licenseChecks += 1;
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ valid: true, reason: 'ok' }) });
+  });
+  await page.reload();
+  await page.getByRole('link', { name: 'Start', exact: true }).click();
+  const purchase = page.getByRole('link', { name: 'Buy Contour once for $12' });
+  await expect(purchase).toHaveAttribute('href', 'https://api.sociobot.in/api/v1/products/focus-study-sprint/checkout');
+  await expect(page.getByText('Contour adds saved prompt sets and your latest 20 session records.')).toBeVisible();
+  await expect(page.getByText('Study sessions and JSON backup remain free.')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Load sample into my draft' }).click();
+  await page.getByRole('link', { name: 'Library' }).click();
+  await expect(page.getByRole('button', { name: 'Save current draft' })).toBeVisible();
+  page.once('dialog', (dialog) => {
+    expect(dialog.type()).toBe('prompt');
+    void dialog.accept('Exam review');
+  });
+  await page.getByRole('button', { name: 'Save current draft' }).click();
+  await expect(page.getByText('Exam review', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Use' }).click();
+  await expect(page.getByLabel(/One prompt and answer/)).toHaveValue(/What process do plants use to convert light into energy\? :: Photosynthesis/);
+
+  await page.getByRole('link', { name: 'Library' }).click();
   page.once('dialog', (dialog) => dialog.accept());
   await page.locator('input[data-import]').setInputFiles({
     name: 'contour-history.json',

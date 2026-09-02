@@ -15,8 +15,8 @@ Try the isolated sample session: <https://focus-study-sprint.sociobot.in/demo>
 - Local session history plus JSON backup and restore.
 - An installable app shell that works offline after the first online visit.
 - System, light, and dark themes with reduced motion and a tested 390px layout.
-- Optional $12 one-time Contour license: reusable saved prompt sets and extended
-  on-device history. Checkout and verification use only the Sociobot billing API.
+- Optional $12 one-time Contour license: reusable saved prompt sets and the latest
+  20 on-device session records. Checkout and verification use only the Sociobot billing API.
 - Plain-language `/privacy/` and `/terms/` pages.
 
 The **Try it with sample data** action opens `/demo`. Demo data uses `demo:` storage

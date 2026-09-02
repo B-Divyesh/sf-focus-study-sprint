@@ -164,7 +164,7 @@ function shell(content: string): string {
     <main id="main" tabindex="-1">${content}</main>
     <footer>
       <p>Short answer-practice sessions for students and self-learners.</p>
-      <div><a href="${routeFor('about')}" data-nav="about">About</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Built by Param Factory</span><span>v1.1.0 · polish-1</span></div>
+      <div><a href="${routeFor('about')}" data-nav="about">About</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Built by Param Factory</span><span>v1.1.1 · repair-7</span></div>
     </footer>
     <div class="sr-only" aria-live="polite" id="live-region"></div>
     ${state.updateReady ? '<div class="update-toast" role="status"><span>An app update is ready.</span><button data-update>Update app</button></div>' : ''}
@@ -287,13 +287,13 @@ function libraryView(): string {
         <section aria-labelledby="decks-title">
           <div class="section-heading"><h2 id="decks-title">Reusable prompt sets</h2>${state.unlocked ? '<button class="text-button" data-save-draft>Save current draft</button>' : ''}</div>
           ${state.unlocked ? (state.decks.length ? `<ul class="deck-list">${state.decks.map((deck) => `<li><div><strong>${escapeHtml(deck.name)}</strong><span>${deck.prompts.length} prompts</span></div><div><button data-load-deck="${deck.id}">Use</button><button class="danger-button" data-delete-deck="${deck.id}" aria-label="Delete ${escapeHtml(deck.name)}">Delete</button></div></li>`).join('')}</ul>` : '<div class="empty-state"><span class="map-mark">×</span><h3>No saved sets yet</h3><p>Return to Start, paste a valid set, then save it here.</p></div>') : `
-            <div class="unlock-panel"><span class="map-mark">◇</span><h3>Reuse prompt sets</h3><p>The $12 one-time Contour license adds reusable prompt sets and your full on-device session list. Starting sessions and exporting data stay free.</p><a class="primary-action" href="${CHECKOUT_URL}">Buy Contour once for $12</a><button class="text-button" data-license-dialog>Have a license? Restore it</button><p class="merchant-note">Secure checkout by Sociobot / Dodo, merchant of record. No subscription.</p></div>
+            <div class="unlock-panel"><span class="map-mark">◇</span><h3>Reuse prompt sets</h3><p>The $12 one-time Contour license adds reusable prompt sets and your latest 20 on-device session records. Starting sessions and exporting data stay free.</p><a class="primary-action" href="${CHECKOUT_URL}">Buy Contour once for $12</a><button class="text-button" data-license-dialog>Have a license? Restore it</button><p class="merchant-note">Secure checkout by Sociobot / Dodo, merchant of record. No subscription.</p></div>
           `}
         </section>
         <section aria-labelledby="history-title">
           <div class="section-heading"><h2 id="history-title">Recent sessions</h2><span>${state.unlocked ? 'Latest 20' : 'Latest 3'}</span></div>
           ${recent.length ? `<ol class="history-list">${recent.map((session) => { const result = recap(session.responses); return `<li><time datetime="${session.startedAt}">${new Date(session.startedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time><span>${result.answered} checked · ${result.practice} to revisit</span></li>`; }).join('')}</ol>` : '<div class="empty-state"><span class="map-mark">○</span><h3>No sessions recorded</h3><p>Your first private recap will appear here.</p></div>'}
-          ${!state.unlocked && state.sessions.length > 3 ? '<p class="quiet-notice">Older sessions remain in your export and appear after unlocking.</p>' : ''}
+          ${!state.unlocked && state.sessions.length > 3 ? '<p class="quiet-notice">Contour shows your latest 20 sessions after unlocking. All sessions remain in your JSON export.</p>' : ''}
         </section>
       </div>
       <section class="data-controls" aria-labelledby="data-title">
