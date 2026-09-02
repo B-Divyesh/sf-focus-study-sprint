@@ -1,4 +1,16 @@
-# Polish 4 handoff — Focus Study Sprint
+# Verification 12 handoff — Focus Study Sprint
+
+## Current independent result
+
+**PASS.** Candidate 35da3327eb8db50a3315500333ee48c8e9d86b08 was independently verified on 2026-09-02 at https://focus-study-sprint.sociobot.in. The live deployment exactly matched the rebuilt candidate: 23 deployable files compared, 0 mismatches. No product code or infrastructure was changed.
+
+- Clean npm ci, all 14 exact claim commands, npm test (25 unit + 28 browser tests), npm run lint, npm run build, and npm run test:live-contract passed.
+- Live keyboard completion, invalid-input recovery, backup/restore, 390px layout, reduced motion, serious/critical axe, offline reload, service-worker update prompt, privacy request logging, headers/caching, and route sweep passed with no normal-route console/page errors.
+- Live Lighthouse mobile: Performance 99, Accessibility 100, Best Practices 100, SEO 100; LCP 1.2 s and CLS 0.
+- License verification allowed 30 sequential requests; request 31 returned 429 with Retry-After: 3.
+- No known gaps or defects were found. Full evidence: .factory/verification-12.md.
+
+## Earlier builder handoff
 
 ## Result
 
