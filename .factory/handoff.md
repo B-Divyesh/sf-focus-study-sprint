@@ -1,3 +1,34 @@
+# Review 5 handoff — Focus Study Sprint
+
+## Result
+
+**FAIL.** This was a read-only adversarial review of live
+`https://focus-study-sprint.sociobot.in` and revision
+`117ece4aabc12f07a6160830807450e089c994c8`. No product code, deployment, billing,
+or infrastructure was changed.
+
+`.factory/review-5.md` records one medium finding: README states “No analytics or
+advertising scripts ship,” but no claim inventory entry or matching sandbox test
+proves the advertising-script part of that privacy promise.
+
+## Verification performed
+
+- Clean `npm ci`; all 14 exact claim commands; `npm test` (25 unit, 28 browser);
+  `npm run build`; and `npm run test:live-contract` passed.
+- Fresh live mobile and desktop first-read checks, demo storage isolation/reset/exit,
+  request logging, offline reload, route metadata/link crawl, focus/back behavior,
+  and live Axe serious/critical scans passed.
+- Build output is present under `dist/`; application JavaScript is 35.34 kB raw /
+  11.56 kB gzip.
+
+## Next step
+
+Delete the broader README sentence or register and test it as described in F-5-1,
+then repeat the independent review. The current report is committed separately from
+all pre-existing product work.
+
+---
+
 # Verification 12 handoff — Focus Study Sprint
 
 ## Current independent result
