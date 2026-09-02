@@ -15,7 +15,7 @@
   },
   {
     "id": "study-flow",
-    "claim": "Keyboard users can complete a five-prompt recall session and receive a persisted recap.",
+    "claim": "Keyboard users can complete a five-prompt answer-practice session and receive a persisted recap.",
     "where": "setup keyboard note, README",
     "test": "npm run test:e2e -- --grep \"@claim:study-flow\"",
     "sandbox": "fresh /demo session; use Enter and 1/2 for all prompts, inspect recap, then reload Library"

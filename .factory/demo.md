@@ -3,7 +3,7 @@
 Open <https://focus-study-sprint.sociobot.in/demo> or use `/?demo=1`. The landing
 page action **Try it with sample data** opens the same sandbox in one click.
 
-The demo starts inside a five-prompt, five-minute active-recall session. Its sample
+The demo starts inside a five-prompt, five-minute answer-practice session. Its sample
 covers biology, geography, web terminology, cell biology, and modern history. The
 banner remains visible on every demo screen.
 

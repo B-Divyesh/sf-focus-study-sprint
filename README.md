@@ -1,9 +1,8 @@
 # Focus Study Sprint
 
-A calm, installable active-recall utility for students and self-learners who want a
-short practice session without streaks, rewards, feeds, reminders, or generated
-content. Paste 5–30 `prompt :: answer` pairs, choose 5/10/20 minutes, and finish one
-focused session. Recaps and reusable sets stay in the browser.
+A calm practice tool for students who want short sessions without streaks, feeds, or generated lessons.
+Paste 5–30 `prompt :: answer` pairs. Choose 5, 10, or 20 minutes. Finish one study session.
+Recaps and reusable sets stay in the browser.
 
 Live product: <https://focus-study-sprint.sociobot.in>
 
@@ -12,7 +11,7 @@ Try the isolated sample session: <https://focus-study-sprint.sociobot.in/demo>
 ## What v1 includes
 
 - Five to 30 prompt pairs, 5/10/20-minute sessions, pause, and time/completion endings.
-- Keyboard recall (`Enter` to reveal and `1` / `2` to self-rate) with a private recap.
+- Keyboard answer practice (`Enter` to reveal and `1` / `2` to self-rate) with a private recap.
 - Local session history plus JSON backup and restore.
 - An installable app shell that works offline after the first online visit.
 - System, light, and dark themes with reduced motion and a tested 390px layout.
@@ -65,10 +64,9 @@ Before a production release, run the complete release gate:
 npm run test:release
 ```
 
-It includes the live Sociobot billing contract: the production catalog must contain
-this exact $12 product, its return URL, and a checkout that redirects to the hosted
-Sociobot/Dodo flow. This check intentionally fails when factory billing registration
-is missing; it never starts a payment.
+The release gate checks the live billing contract. The catalog must list this $12 product and return URL.
+Checkout must redirect to Sociobot/Dodo. This check fails when factory billing registration is missing.
+It never starts a payment.
 
 ## Data and privacy
 
@@ -80,9 +78,8 @@ Library → Export JSON for a portable backup.
 ## Deployment
 
 Deploy the contents of `dist/` as a static site with clean-directory URLs enabled.
-Do not configure infrastructure, DNS, or billing from this repository. The Param
-Factory registers the Sociobot product and checkout return URL separately, and the
-release gate above must pass before deployment is considered releasable.
+Do not configure infrastructure, DNS, or billing from this repository. The Param Factory registers the product and checkout return URL separately.
+The release gate must pass before deployment.
 
 ## Project notes
 

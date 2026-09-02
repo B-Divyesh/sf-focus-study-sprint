@@ -27,7 +27,7 @@ test('@claim:demo-isolation keeps sample work separate from real browser data', 
 test('@claim:input-limits enforces 5–30 prompt pairs and the three session lengths', async ({ page }) => {
   await page.goto('/demo?screen=setup');
   const input = page.getByLabel(/One prompt and answer/);
-  const start = page.getByRole('button', { name: /Begin this sprint/ });
+  const start = page.getByRole('button', { name: /Start study session/ });
   await input.fill(Array.from({ length: 4 }, (_, index) => `Prompt ${index} :: Answer ${index}`).join('\n'));
   await expect(start).toBeDisabled();
   await expect(page.getByText('Add 1 more pair to begin.')).toBeVisible();
@@ -57,7 +57,7 @@ test('@claim:study-flow completes a keyboard-first recall sprint and persists it
   await expect(page).toHaveTitle('Demo — Focus Study Sprint');
   await expect(page.locator('main')).toBeVisible();
   await expect(page.locator('h1')).toHaveCount(1);
-  await expect(page.getByRole('heading', { name: 'Active recall session' })).toBeAttached();
+  await expect(page.getByRole('heading', { name: 'Study session' })).toBeAttached();
   await expect(page.getByText('Demo — sample data, nothing is saved')).toBeVisible();
 
   const scan = await new AxeBuilder({ page }).analyze();
@@ -129,7 +129,7 @@ test('validates malformed input and exposes the recovery instruction', async ({ 
   const input = page.getByLabel(/One prompt and answer/);
   await input.fill('Valid :: answer\nThis line has no separator');
   await expect(page.getByText('Each non-empty line needs a prompt and answer separated by :: or a tab.')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Begin this sprint/ })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /Start study session/ })).toBeDisabled();
 });
 
 test('rejects malformed nested backup records without replacing saved data', async ({ page }) => {
@@ -137,7 +137,7 @@ test('rejects malformed nested backup records without replacing saved data', asy
   page.on('pageerror', (error) => pageErrors.push(error.message));
   await page.goto('/');
   await page.getByRole('button', { name: 'Load sample into my draft' }).click();
-  await page.getByRole('button', { name: /Begin this sprint/ }).click();
+  await page.getByRole('button', { name: /Start study session/ }).click();
   await page.keyboard.press('Enter');
   await page.keyboard.press('2');
   page.once('dialog', (dialog) => dialog.accept());
@@ -197,7 +197,7 @@ test('keeps recovery controls available for data poisoned by an older release', 
 test('restores an in-progress sprint and response after refresh', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Load sample into my draft' }).click();
-  await page.getByRole('button', { name: /Begin this sprint/ }).click();
+  await page.getByRole('button', { name: /Start study session/ }).click();
   await page.getByLabel(/Your answer/).fill('My working answer');
   await page.reload();
   await expect(page.getByText('PROMPT 1 OF 5')).toBeVisible();
@@ -285,12 +285,28 @@ test('legal pages have landmarks, titles, and one primary heading', async ({ pag
   }
 });
 
+test('uses one navigation and footer set on app, demo, legal, and 404 routes', async ({ page }) => {
+  const expectedNavigation = ['Start', 'Library', 'Demo', 'Privacy'];
+  const expectedFooterLinks = ['About', 'Privacy', 'Terms'];
+  for (const path of ['/', '/demo', '/privacy/', '/terms/', '/404.html']) {
+    await page.goto(path);
+    await expect(page.locator('nav[aria-label="Primary"] a')).toHaveText(expectedNavigation);
+    await expect(page.locator('footer a')).toHaveText(expectedFooterLinks);
+    await expect(page.getByText('Short answer-practice sessions for students and self-learners.')).toBeVisible();
+    await expect(page.getByText('Original artwork generated for this product.')).toHaveCount(0);
+  }
+  const sitemap = await page.request.get('/sitemap.xml');
+  expect(sitemap.ok()).toBe(true);
+  const body = await sitemap.text();
+  for (const route of ['/', '/demo', '/library', '/about', '/privacy/', '/terms/']) expect(body).toContain(`focus-study-sprint.sociobot.in${route}`);
+});
+
 test('publishes complete social metadata, standard landing sections, and a 1200×630 image', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://focus-study-sprint.sociobot.in/');
-  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', 'Focus Study Sprint — short active-recall sessions');
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', 'Focus Study Sprint — practice answers in short sessions');
   await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
-  await expect(page.getByRole('heading', { name: 'Finish one study sprint in three steps' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Complete a study session in three steps' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Your study material stays local' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Keep reusable prompt sets for $12' })).toBeVisible();
   await expect(page.getByText('Built by Param Factory')).toBeVisible();
@@ -346,7 +362,7 @@ test('@claim:accessible-layout keeps the first action visible and controls usabl
     const page = await browser.newPage({ viewport });
     await page.goto('/', { waitUntil: 'networkidle' });
     await expect(page.locator('main')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Run a short active-recall study session.' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Practice recalling answers in a short session.' })).toBeVisible();
     await expect(page.getByText(/For students and self-learners/)).toBeVisible();
     const firstAction = await page.getByRole('link', { name: 'Try it with sample data' }).boundingBox();
     expect(firstAction).not.toBeNull();
@@ -366,7 +382,7 @@ test('@claim:accessible-layout keeps the first action visible and controls usabl
     expect(tooSmall).toEqual([]);
 
     await page.getByRole('button', { name: 'Load sample into my draft' }).click();
-    await page.getByRole('button', { name: /Begin this sprint/ }).click();
+    await page.getByRole('button', { name: /Start study session/ }).click();
     const pauseBounds = await page.getByRole('button', { name: 'Pause' }).boundingBox();
     expect(pauseBounds?.height).toBeGreaterThanOrEqual(44);
     await page.close();

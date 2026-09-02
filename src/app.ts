@@ -113,7 +113,7 @@ function setTheme(theme: Theme): void {
 }
 
 const SCREEN_TITLES: Record<Screen, string> = {
-  setup: 'Focus Study Sprint — short active-recall sessions',
+  setup: 'Focus Study Sprint — practice answers in short sessions',
   session: 'Study session — Focus Study Sprint',
   recap: 'Session recap — Focus Study Sprint',
   library: 'Library — Focus Study Sprint',
@@ -152,8 +152,8 @@ function shell(content: string): string {
       <nav aria-label="Primary">
         <a href="${routeFor('setup')}" class="nav-link ${state.screen === 'setup' ? 'active' : ''}" data-nav="setup">Start</a>
         <a href="${routeFor('library')}" class="nav-link ${state.screen === 'library' ? 'active' : ''}" data-nav="library">Library</a>
-        <a href="${routeFor('about')}" class="nav-link ${state.screen === 'about' ? 'active' : ''}" data-nav="about">About</a>
-        ${DEMO_MODE ? '' : '<a href="/demo" class="nav-link">Demo</a>'}
+        <a href="/demo" class="nav-link ${DEMO_MODE ? 'active' : ''}">Demo</a>
+        <a href="/privacy/" class="nav-link">Privacy</a>
       </nav>
       <button class="icon-button theme-button" aria-label="Change color theme" title="Change color theme" data-theme-toggle>
         ${icon(state.theme === 'dark' ? 'moon' : state.theme === 'light' ? 'sun' : 'system')}
@@ -163,8 +163,8 @@ function shell(content: string): string {
     ${status}
     <main id="main" tabindex="-1">${content}</main>
     <footer>
-      <p>Short active-recall sessions for students and self-learners.</p>
-      <div><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Built by Param Factory</span><span>v1.1.0 · repair-5</span><span>Original artwork generated for this product.</span></div>
+      <p>Short answer-practice sessions for students and self-learners.</p>
+      <div><a href="${routeFor('about')}" ${DEMO_MODE ? 'data-nav="about"' : ''}>About</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Built by Param Factory</span><span>v1.1.0 · polish-1</span></div>
     </footer>
     <div class="sr-only" aria-live="polite" id="live-region"></div>
     ${state.updateReady ? '<div class="update-toast" role="status"><span>An app update is ready.</span><button data-update>Update app</button></div>' : ''}
@@ -178,7 +178,7 @@ function setupView(): string {
     <section class="hero" aria-labelledby="setup-title">
       <div class="hero-copy">
         <p class="eyebrow">Focus Study Sprint</p>
-        <h1 id="setup-title" tabindex="-1">Run a short active-recall study session.</h1>
+        <h1 id="setup-title" tabindex="-1">Practice recalling answers in a short session.</h1>
         <p class="lede">For students and self-learners who want focused practice without streaks, feeds, or generated lessons.</p>
         <div class="hero-actions"><a class="primary-action" href="/demo">Try it with sample data</a><p>Opens a five-prompt practice session.</p></div>
         <ul class="trust-list" aria-label="Product facts">
@@ -207,16 +207,16 @@ function setupView(): string {
           ${[5, 10, 20].map((minutes) => `<label class="duration"><input type="radio" name="duration" value="${minutes}" ${state.duration === minutes ? 'checked' : ''}><span><strong>${minutes}</strong> min</span></label>`).join('')}
         </div>
       </fieldset>
-      <button class="primary-action" data-start ${validation.message || count < 5 ? 'disabled' : ''}>Begin this sprint <span aria-hidden="true">→</span></button>
+      <button class="primary-action" data-start ${validation.message || count < 5 ? 'disabled' : ''}>Start study session <span aria-hidden="true">→</span></button>
       <p class="keyboard-note">Keyboard ready: press Tab to move, then Enter to begin.</p>
     </section>
     <section class="landing-section steps-section" aria-labelledby="steps-title">
-      <p class="coordinate">HOW IT WORKS</p><h2 id="steps-title">Finish one study sprint in three steps</h2>
+      <p class="coordinate">HOW IT WORKS</p><h2 id="steps-title">Complete a study session in three steps</h2>
       <ol class="steps-list"><li><strong>Paste 5–30 pairs.</strong><span>Put one prompt and answer on each line.</span></li><li><strong>Recall each answer.</strong><span>Reveal it, then choose Recalled or Keep practicing.</span></li><li><strong>Review your recap.</strong><span>Export a JSON backup whenever you want one.</span></li></ol>
     </section>
     <section class="landing-section limits-section" aria-labelledby="limits-title">
       <div><p class="coordinate">PRIVATE BY DEFAULT</p><h2 id="limits-title">Your study material stays local</h2><p>Prompts, responses, ratings, and recaps remain in this browser. The app sends no behavioral analytics.</p><a href="/privacy/">Read the privacy policy</a></div>
-      <div><p class="coordinate">CLEAR LIMITS</p><h2>Bring material you trust</h2><p>The app does not teach content, check correctness, or promise learning results.</p></div>
+      <div><p class="coordinate">WHAT THIS APP DOES NOT DO</p><h2>This app does not check answers</h2><p>The app does not teach content, check correctness, or promise learning results.</p></div>
     </section>
     <section class="landing-section price-section" aria-labelledby="price-title">
       <div><p class="coordinate">OPTIONAL ONE-TIME PURCHASE</p><h2 id="price-title">Keep reusable prompt sets for $12</h2><p>Contour adds saved prompt sets and your latest 20 session records. Study sessions and JSON backup remain free.</p></div>
@@ -231,7 +231,7 @@ function sessionView(): string {
   return shell(`
     <section class="session-wrap" aria-labelledby="session-title">
       <div class="session-topline">
-        <div><p class="coordinate">PROMPT ${state.current + 1} OF ${state.prompts.length}</p><h1 id="session-title" class="sr-only" tabindex="-1">Active recall session</h1></div>
+        <div><p class="coordinate">PROMPT ${state.current + 1} OF ${state.prompts.length}</p><h1 id="session-title" class="sr-only" tabindex="-1">Study session</h1></div>
         <div class="timer ${state.paused ? 'is-paused' : ''}" aria-label="${formatClock(state.remaining)} remaining"><span>${formatClock(state.remaining)}</span><button class="text-button" data-pause>${state.paused ? 'Resume' : 'Pause'}</button></div>
       </div>
       <div class="route-progress" role="progressbar" aria-label="Prompt progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}"><span class="progress-${Math.round(percent)}"></span></div>
@@ -268,7 +268,7 @@ function recapView(): string {
         <div><dt>Recalled</dt><dd>${summary.recalled}</dd></div>
         <div><dt>Keep practicing</dt><dd>${summary.practice}</dd></div>
       </dl>
-      <div class="recap-actions"><button class="primary-action" data-nav="setup">Start another sprint</button><button class="secondary-action" data-export>Export my data ${icon('download')}</button></div>
+      <div class="recap-actions"><button class="primary-action" data-nav="setup">Start another study session</button><button class="secondary-action" data-export>Export my data ${icon('download')}</button></div>
       <section class="review-list" aria-labelledby="review-title">
         <h2 id="review-title">Marked for more practice</h2>
         ${practiceItems.length ? `<ol>${practiceItems.map((item) => `<li><strong>${escapeHtml(item.question)}</strong><span>${escapeHtml(item.expected)}</span></li>`).join('')}</ol>` : '<p class="empty-copy">You did not mark any checked prompts for more practice.</p>'}
@@ -311,7 +311,7 @@ function aboutView(): string {
   return shell(`
     <section class="about-wrap" aria-labelledby="about-title">
       <p class="coordinate">PRODUCT SCOPE</p><h1 id="about-title" tabindex="-1">Practice without streaks or feeds</h1>
-      <p class="lede">Focus Study Sprint supports short active-recall practice. It does not generate teaching material, judge mastery, or try to make you return.</p>
+      <p class="lede">Focus Study Sprint supports short answer-recall practice. It does not generate teaching material, judge mastery, or try to make you return.</p>
       <div class="principles-grid"><article><span>01</span><h2>Bring your own material</h2><p>You choose the material. The app presents one prompt at a time.</p></article><article><span>02</span><h2>Finish on purpose</h2><p>A timer and finite prompt set give the session a clear end.</p></article><article><span>03</span><h2>Keep it private</h2><p>Prompts, answers, ratings, and saved sets stay in this browser.</p></article></div>
     </section>
   `);

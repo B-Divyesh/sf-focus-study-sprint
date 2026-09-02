@@ -2,7 +2,7 @@
   "id": "/?source=install",
   "name": "Focus Study Sprint",
   "short_name": "Study Sprint",
-  "description": "Calm, finite active-recall sessions that stay on your device.",
+  "description": "Calm, finite answer-practice sessions that stay on your device.",
   "start_url": "/?v=6",
   "scope": "/",
   "display": "standalone",
@@ -14,6 +14,6 @@
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ],
   "shortcuts": [
-    { "name": "Start a sprint", "short_name": "Start", "url": "/", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+    { "name": "Start a study session", "short_name": "Start", "url": "/", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
   ]
 }
