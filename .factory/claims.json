@@ -103,5 +103,33 @@
     "where": "README",
     "test": "npm run test:e2e -- --grep \"@claim:installable-shell\"",
     "sandbox": "fresh /demo page; inspect the linked manifest and wait for the app-owned service worker to activate and control the page"
+  },
+  {
+    "id": "free-history-limit",
+    "claim": "Without a Contour license, the Library shows the latest 3 session records.",
+    "where": "Library history heading",
+    "test": "npm run test:e2e -- --grep \"@claim:free-history-limit\"",
+    "sandbox": "fresh unlicensed Library; import 21 dated session records and observe the Latest 3 label and exactly three visible records"
+  },
+  {
+    "id": "history-overflow-export",
+    "claim": "When the unlicensed Library shows only the latest 3 records, JSON export still includes every local session record.",
+    "where": "Library history notice",
+    "test": "npm run test:e2e -- --grep \"@claim:history-overflow-export\"",
+    "sandbox": "fresh unlicensed Library; import 21 dated session records, export JSON, and inspect all 21 records in the download"
+  },
+  {
+    "id": "free-accessibility",
+    "claim": "Accessibility, the complete study flow, and export remain free without a Contour license.",
+    "where": "Terms — One-time Contour license",
+    "test": "npm run test:e2e -- --grep \"@claim:free-accessibility\"",
+    "sandbox": "fresh unlicensed workspace; use keyboard controls to complete a five-prompt session, scan for serious or critical accessibility issues, and export the completed record without a license request"
+  },
+  {
+    "id": "invalid-license-lock",
+    "claim": "An invalid, expired, revoked, or wrong-product license no longer enables paid features.",
+    "where": "Terms — One-time Contour license",
+    "test": "npm run test:e2e -- --grep \"@claim:invalid-license-lock\"",
+    "sandbox": "four isolated browser contexts with recorded invalid, expired, revoked, and wrong-product verification results; each begins optimistically unlocked, then must show the inactive notice and lock saved sets and extended history"
   }
 ]

@@ -1,7 +1,38 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
+
+function overflowHistory(total = 21) {
+  return Array.from({ length: total }, (_, index) => {
+    const count = index + 1;
+    const startedAt = new Date(Date.UTC(2026, 0, count)).toISOString();
+    return {
+      id: `overflow-session-${count}`,
+      startedAt,
+      endedAt: startedAt,
+      durationMinutes: 5,
+      endReason: 'complete' as const,
+      promptCount: 1,
+      responses: [{
+        promptId: `overflow-prompt-${count}`,
+        question: `Prompt ${count}`,
+        expected: `Answer ${count}`,
+        response: '',
+        rating: 'recalled' as const
+      }]
+    };
+  });
+}
+
+async function importHistory(page: Page, sessions = overflowHistory()) {
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.locator('input[data-import]').setInputFiles({
+    name: 'overflow-history.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({ product: 'focus-study-sprint', version: 1, exportedAt: '2026-01-31T00:00:00.000Z', sessions, decks: [] }))
+  });
+}
 
 test('@claim:demo-isolation keeps sample work separate from real browser data', async ({ page }) => {
   const sentinel = 'REAL PRIVATE DRAFT :: must not appear in demo';
@@ -256,6 +287,99 @@ test('@claim:free-core lets an unlicensed real workspace complete, export, and r
   expect(licenseRequests).toEqual([]);
 });
 
+test('@claim:free-accessibility keeps accessibility, the complete study flow, and export free without a Contour license', async ({ page }) => {
+  const licenseRequests: string[] = [];
+  page.on('request', (request) => {
+    if (new URL(request.url()).origin === 'https://api.sociobot.in') licenseRequests.push(request.url());
+  });
+  await page.goto('/');
+  const landingScan = await new AxeBuilder({ page }).analyze();
+  expect(landingScan.violations.filter((item) => ['serious', 'critical'].includes(item.impact ?? ''))).toEqual([]);
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('main')).toBeFocused();
+  await page.getByRole('button', { name: 'Load sample into my draft' }).focus();
+  await page.keyboard.press('Enter');
+  await page.getByRole('button', { name: 'Start study session' }).focus();
+  await page.keyboard.press('Enter');
+  for (let index = 0; index < 5; index += 1) {
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('region', { name: 'Expected answer' })).toBeVisible();
+    await page.keyboard.press('2');
+  }
+  await expect(page.getByRole('heading', { name: 'Your study session is complete.' })).toBeVisible();
+  const recapScan = await new AxeBuilder({ page }).analyze();
+  expect(recapScan.violations.filter((item) => ['serious', 'critical'].includes(item.impact ?? ''))).toEqual([]);
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: /Export my data/ }).click();
+  const download = await downloadPromise;
+  const downloadPath = await download.path();
+  if (!downloadPath) throw new Error('The unlicensed workspace did not create a JSON backup.');
+  const exported = JSON.parse(await readFile(downloadPath, 'utf8')) as { sessions: unknown[] };
+  expect(exported.sessions).toHaveLength(1);
+  expect(licenseRequests).toEqual([]);
+});
+
+test('@claim:free-history-limit shows exactly the latest three records without a Contour license', async ({ page }) => {
+  await page.goto('/library');
+  await importHistory(page);
+  await expect(page.getByText('Latest 3', { exact: true })).toBeVisible();
+  await expect(page.locator('.history-list li')).toHaveCount(3);
+  expect(await page.locator('.history-list time').evaluateAll((times) => times.map((time) => time.getAttribute('datetime')))).toEqual([
+    '2026-01-21T00:00:00.000Z', '2026-01-20T00:00:00.000Z', '2026-01-19T00:00:00.000Z'
+  ]);
+});
+
+test('@claim:history-overflow-export keeps all records in JSON when unlicensed history shows only three', async ({ page }) => {
+  const sessions = overflowHistory();
+  await page.goto('/library');
+  await importHistory(page, sessions);
+  await expect(page.getByText('Latest 3', { exact: true })).toBeVisible();
+  await expect(page.locator('.history-list li')).toHaveCount(3);
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: /Export JSON/ }).click();
+  const download = await downloadPromise;
+  const downloadPath = await download.path();
+  if (!downloadPath) throw new Error('The overflow history did not create a JSON backup.');
+  const exported = JSON.parse(await readFile(downloadPath, 'utf8')) as { sessions: Array<{ id: string }> };
+  expect(exported.sessions).toHaveLength(21);
+  expect(exported.sessions.map((session) => session.id).sort()).toEqual(sessions.map((session) => session.id).sort());
+});
+
+test('@claim:invalid-license-lock removes paid features for invalid, expired, revoked, and wrong-product licenses', async ({ browser }) => {
+  for (const reason of ['invalid', 'expired', 'revoked', 'wrong_product']) {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    const token = `recorded-${reason}-license`;
+    const verificationUrl = `https://api.sociobot.in/api/v1/products/focus-study-sprint/verify?license=${token}`;
+    let releaseVerification: (() => void) | undefined;
+    const verificationGate = new Promise<void>((resolve) => { releaseVerification = resolve; });
+    let reportVerificationStarted: (() => void) | undefined;
+    const verificationStarted = new Promise<void>((resolve) => { reportVerificationStarted = resolve; });
+    await context.route(verificationUrl, async (route) => {
+      reportVerificationStarted?.();
+      await verificationGate;
+      await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ valid: false, reason }) });
+    });
+    try {
+      await page.goto(`/?license=${token}`);
+      await verificationStarted;
+      await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Library' }).click();
+      await expect(page.getByRole('button', { name: 'Save current draft' })).toBeVisible();
+      await expect(page.getByText('Latest 20', { exact: true })).toBeVisible();
+      if (!releaseVerification) throw new Error(`Verification did not start for ${reason}.`);
+      releaseVerification();
+      await expect(page.getByText('Your saved license is no longer active.')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Save current draft' })).toHaveCount(0);
+      await expect(page.getByText('Latest 3', { exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Reuse prompt sets' })).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  }
+});
+
 test('@claim:scope-limits presents supplied prompts without grading, teaching, content generation, streaks, feeds, rewards, or return nudges', async ({ page }) => {
   const requests: string[] = [];
   page.on('request', (request) => requests.push(request.url()));
@@ -461,7 +585,7 @@ test('@claim:installable-shell publishes a standalone manifest and active servic
   });
   expect(installation.manifestHref).toBe('/manifest.webmanifest');
   expect(installation.manifest).toMatchObject({
-    name: 'Focus Study Sprint', short_name: 'Study Sprint', start_url: '/?v=12', display: 'standalone', scope: '/'
+    name: 'Focus Study Sprint', short_name: 'Study Sprint', start_url: '/?v=13', display: 'standalone', scope: '/'
   });
   expect(installation.manifest.icons).toEqual(expect.arrayContaining([
     expect.objectContaining({ src: '/icons/icon-192.png', sizes: '192x192' }),
@@ -670,12 +794,28 @@ test('does not reload when the service worker first claims a page', async ({ bro
   }
 });
 
-test('offline fallback and designed 404 render without console errors', async ({ page }) => {
+test('offline fallback keeps the standard skeleton, metadata, keyboard recovery, and designed 404 behavior', async ({ page }) => {
   const errors: string[] = [];
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
   await page.goto('/offline.html');
+  await expect(page).toHaveTitle('Offline — Focus Study Sprint');
   await expect(page.getByRole('heading', { name: 'This page is offline' })).toBeVisible();
   await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(244, 240, 230)');
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://focus-study-sprint.sociobot.in/offline.html');
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/icons/icon.svg');
+  await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href', '/icons/apple-touch-icon.png');
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', 'Offline — Focus Study Sprint');
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /social-card\.jpg$/);
+  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
+  await expect(page.locator('nav[aria-label="Primary"] a')).toHaveText(['Start', 'Library', 'Demo', 'Privacy']);
+  await expect(page.locator('footer a')).toHaveText(['About', 'Privacy', 'Terms']);
+  await expect(page.getByText('Built by Param Factory')).toBeVisible();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('main')).toBeFocused();
+  const offlineScan = await new AxeBuilder({ page }).analyze();
+  expect(offlineScan.violations.filter((item) => ['serious', 'critical'].includes(item.impact ?? ''))).toEqual([]);
   await page.goto('/404.html');
   await expect(page).toHaveTitle('Page not found — Focus Study Sprint');
   await expect(page.getByRole('heading', { name: 'This page does not exist' })).toBeVisible();
