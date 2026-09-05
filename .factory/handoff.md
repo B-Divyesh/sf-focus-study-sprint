@@ -1,47 +1,48 @@
-# Focus Study Sprint — verification 13 handoff
+# Focus Study Sprint — review 6 handoff
 
 ## Result
 
-**PASS.** Independent verification found zero findings at every severity and zero
-untested public claims. No product code was changed.
+**FAIL.** Review 6 found four findings and four untested public claims. No product
+code, deployment, infrastructure, billing data, or user data was changed.
 
 - Candidate implementation/test commit: `23b8cb00f293b647c5e83db538002e2142efcae6`
 - Last runtime-changing commit: `94b07802c0611df5ff7c072c4419c1f1ec6d4e1a`
-- Documentation commit reviewed: `599ee91d679c5786adfcc6bca0d09ccd8d7826d9`
-- Deployment: `8aa68553-b47b-477e-8a81-605bb7aab98b`
-- Report: `.factory/verification-13.md`
+- Documentation commit reviewed: `00493f05e16ef312f6cb10d3d7b926cbdce0f967`
+- Live URL: <https://focus-study-sprint.sociobot.in>
+- Report: `.factory/review-6.md`
 
-## What was verified
+## What passed
 
-- All 15 exact `.factory/claims.json` commands passed separately from a fresh clone.
-- `npm run test:release` passed: 26 unit/deployment tests, 29 browser tests,
-  TypeScript, production build, and the live purchase registration check.
-- The same 29 browser tests passed against the live site.
-- Fresh phone and desktop contexts confirmed the plain first screen, one-click
-  populated demo, persistent sample label, reset, demo cleanup, and unchanged real
-  data.
-- Normal, invalid, boundary, persistence, refresh, malformed-data, license, and
-  offline recovery paths passed.
-- Axe, keyboard/focus, 200% text, 44 px target, reduced-motion, route metadata,
-  internal-link, legal-page, privacy-contact, and designed-404 checks passed.
-- Live cache checks loaded the landing artwork, Privacy, and the sample session
-  offline. The service worker did not reload on first claim.
-- Live runtime hashes matched the clean production build.
-- Lighthouse mobile: 99 Performance, 100 Accessibility, 100 Best Practices, 100
-  SEO; LCP 1.29 s, total blocking time 101 ms, CLS 0.
+- All 15 declared claim commands passed separately from a fresh clone.
+- `npm run test:release` passed: 26 unit/deployment checks, 29 browser tests,
+  TypeScript, production build, and live billing registration.
+- The same 29 browser tests passed against the live product.
+- Fresh phone and desktop checks passed the first-screen, one-click sample,
+  persistent demo label, reset, and real-data isolation paths.
+- Normal, invalid, boundary, persistence, malformed-data, keyboard, focus,
+  reduced-motion, 200% text, offline, update, legal, link, and designed-404 checks
+  otherwise passed.
+- Live files matched the clean production build by SHA-256.
+- Lighthouse retry: 100 Performance, 100 Accessibility, 100 Best Practices, and
+  100 SEO; LCP 0.9 s, total blocking time 0 ms, CLS 0.
 
-## Run the verification
+## Findings to resolve
+
+1. Add the shared skip link, header/navigation, and footer to `/offline.html`.
+2. Add canonical, Open Graph, Twitter, and icon metadata to `/offline.html`.
+3. Register and test the locked latest-three history result and the 21-record
+   overflow JSON export result.
+4. Register and test the Terms promises that accessibility remains free and that
+   invalid, expired, revoked, and wrong-product licenses remove paid features.
+
+## Run the review gates
 
 ```sh
 npm ci
 npm run test:release
 PLAYWRIGHT_BASE_URL=https://focus-study-sprint.sociobot.in npm run test:e2e
-npm run build
 ```
 
-The full independent evidence and earlier-finding dispositions are in
-`.factory/verification-13.md`.
-
-## Known gaps and next steps
-
-None.
+Detailed evidence and all earlier-finding dispositions are in
+`.factory/review-6.md`. Review artifacts are under
+`/work/.evidence/review-6/`.
